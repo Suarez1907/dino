@@ -27,6 +27,7 @@ var _toast := ""
 var _toast_time := 0.0
 var _near_museum := false
 var env: Environment
+var _terrain: MeshInstance3D
 
 var _site_label: Label
 var _soil_title: Label
@@ -115,13 +116,12 @@ func _physics_process(delta: float) -> void:
 	var dir := right * wish.x + forward * -wish.y
 	if dir.length() > 1.0:
 		dir = dir.normalized()
-	if not player.is_on_floor():
-		player.velocity.y -= 18.0 * delta
-	else:
-		player.velocity.y = 0.0
+	player.velocity.y = 0.0
 	player.velocity.x = dir.x * 4.6
 	player.velocity.z = dir.z * 4.6
 	player.move_and_slide()
+	if _terrain and _terrain.has_method("sample"):
+		player.global_position.y = _terrain.sample(player.global_position.x, player.global_position.z)
 	if dir.length() > 0.15:
 		var target := atan2(dir.x, dir.z)
 		player.rotation.y = lerp_angle(player.rotation.y, target, 1.0 - exp(-8.0 * delta))
@@ -356,24 +356,40 @@ func _build_environment() -> void:
 	env.tonemap_exposure = 1.05
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.18
-	var fx := bool(GameState.settings.effects)
+	var grade := str(GameState.settings.get("quality", "medium"))
+	var fx := bool(GameState.settings.effects) and grade != "low"
 	env.glow_enabled = fx
-	env.glow_intensity = 0.35
-	env.glow_bloom = 0.12
-	env.glow_hdr_threshold = 1.0
+	env.glow_intensity = 0.42 if grade == "high" else 0.28
+	env.glow_bloom = 0.16
+	env.glow_hdr_threshold = 0.95
 	env.ssao_enabled = fx
-	env.ssao_radius = 1.1
-	env.ssao_intensity = 1.15
+	env.ssao_radius = 1.2
+	env.ssao_intensity = 1.35 if grade == "high" else 0.9
 	env.ssao_power = 1.4
-	env.ssao_detail = 0.35
+	env.ssao_detail = 0.4
+	env.fog_enabled = true
+	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+	env.fog_density = 0.01 if grade == "low" else 0.018
+	env.fog_light_color = sky_mat.sky_horizon_color
+	env.fog_aerial_perspective = 0.35
+	if grade == "high" and fx and str(RenderingServer.get_current_rendering_method()) == "forward_plus":
+		env.volumetric_fog_enabled = true
+		env.volumetric_fog_density = 0.006
+		env.volumetric_fog_albedo = Color(1.0, 0.88, 0.68)
+	if grade != "low" and ResourceLoader.exists("res://assets/textures/sky.hdr"):
+		var pano := PanoramaSkyMaterial.new()
+		pano.panorama = load("res://assets/textures/sky.hdr")
+		pano.energy_multiplier = 0.9
+		sky.sky_material = pano
 	world_env.environment = env
 	add_child(world_env)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, 35, 0)
 	sun.light_color = Color(1.0, 0.95, 0.86)
 	sun.light_energy = 1.35
-	sun.shadow_enabled = true
-	sun.shadow_blur = 1.6
+	sun.shadow_enabled = grade != "low"
+	sun.shadow_blur = 2.2 if grade == "high" else 1.2
+	sun.light_volumetric_fog_energy = 1.6 if grade == "high" else 0.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	sun.directional_shadow_max_distance = 42.0
 	add_child(sun)
@@ -393,36 +409,76 @@ func _build_ground() -> void:
 	var box := BoxShape3D.new()
 	box.size = Vector3(80, 2, 80)
 	shape.shape = box
-	shape.position = Vector3(0, -1, 0)
+	shape.position = Vector3(0, -12, 0)
 	body.add_child(shape)
 	add_child(body)
+	var terrain := MeshInstance3D.new()
+	terrain.set_script(load("res://scripts/world/terrain.gd"))
+	add_child(terrain)
+	terrain.setup(str(site().get("biome", "desert")), site_id)
+	_terrain = terrain
+
+func _on_ground(point: Vector3) -> Vector3:
+	if _terrain and _terrain.has_method("sample"):
+		point.y = _terrain.sample(point.x, point.z)
+	return point
+
+func _crate(at: Vector3) -> void:
 	var mesh := MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(72, 72)
-	mesh.mesh = plane
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://assets/shaders/ground.gdshader")
-	var biome := str(site().get("biome", "desert"))
-	if biome == "forest":
-		mat.set_shader_parameter("color_a", Color.html("#6ea85a"))
-		mat.set_shader_parameter("color_b", Color.html("#3d6a38"))
-	elif biome == "ice":
-		mat.set_shader_parameter("color_a", Color.html("#e7f3fb"))
-		mat.set_shader_parameter("color_b", Color.html("#b7d0e2"))
-	else:
-		mat.set_shader_parameter("color_a", Color.html("#e6c48a"))
-		mat.set_shader_parameter("color_b", Color.html("#c48449"))
-	mesh.material_override = mat
+	var box := BoxMesh.new()
+	box.size = Vector3(0.7, 0.55, 0.7)
+	mesh.mesh = box
+	mesh.position = at + Vector3(0, 0.28, 0)
+	mesh.material_override = _mat(Color("8a5a32"), 0.84)
 	add_child(mesh)
+
+func _fence(at: Vector3) -> void:
+	for i in 5:
+		var post := MeshInstance3D.new()
+		var cap := CylinderMesh.new()
+		cap.top_radius = 0.05
+		cap.bottom_radius = 0.06
+		cap.height = 0.9
+		post.mesh = cap
+		post.position = at + Vector3(float(i) * 0.85, 0.45, 0)
+		post.material_override = _mat(Color("a56b3c"), 0.86)
+		add_child(post)
+	var rail := MeshInstance3D.new()
+	var bar := BoxMesh.new()
+	bar.size = Vector3(3.5, 0.06, 0.06)
+	rail.mesh = bar
+	rail.position = at + Vector3(1.7, 0.7, 0)
+	rail.material_override = _mat(Color("a56b3c"), 0.86)
+	add_child(rail)
+
+func _grid(at: Vector3) -> void:
+	for i in 3:
+		for j in 3:
+			var post := MeshInstance3D.new()
+			var cap := CylinderMesh.new()
+			cap.top_radius = 0.03
+			cap.bottom_radius = 0.03
+			cap.height = 0.42
+			post.mesh = cap
+			post.position = at + Vector3(float(i) * 0.75, 0.2, float(j) * 0.75)
+			post.material_override = _mat(Color("f2e2b0"), 0.7)
+			add_child(post)
 
 func _build_props() -> void:
 	var biome := str(site().get("biome", "desert"))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(site_id)
-	for i in 10:
+	var count := 14
+	var grade := str(GameState.settings.get("quality", "medium"))
+	if grade == "low":
+		count = 8
+	elif grade == "high":
+		count = 22
+	for i in count:
 		var p := Vector3(rng.randf_range(-16, 16), 0, rng.randf_range(-6, 18))
-		if p.length() < 2.2:
+		if Vector2(p.x, p.z).length() < 2.4:
 			continue
+		p = _on_ground(p)
 		if biome == "forest":
 			_tree(p, rng.randf_range(0.8, 1.4))
 		elif biome == "ice":
@@ -433,7 +489,13 @@ func _build_props() -> void:
 			else:
 				_rock(p, rng.randf_range(0.4, 1.1), Color("b88858"))
 	var tent_pos_a: Array = site().get("tent", [-6, 0])
-	_tent(Vector3(float(tent_pos_a[0]), 0, float(tent_pos_a[1])))
+	var tent_p := _on_ground(Vector3(float(tent_pos_a[0]), 0, float(tent_pos_a[1])))
+	_tent(tent_p)
+	_crate(_on_ground(tent_p + Vector3(2.2, 0, 0.6)))
+	_crate(_on_ground(tent_p + Vector3(2.6, 0, 1.4)))
+	if grade != "low":
+		_fence(_on_ground(tent_p + Vector3(-1.2, 0, 3.0)))
+		_grid(_on_ground(Vector3(4.4, 0, 6.2)))
 
 func _build_spots() -> void:
 	for spot_data in site().get("spots", []):
@@ -441,6 +503,10 @@ func _build_spots() -> void:
 		spot.set_script(SpotScript)
 		add_child(spot)
 		spot.setup(site_id, spot_data)
+		if _terrain:
+			spot.position.y = _terrain.sample(spot.position.x, spot.position.z)
+			if spot.has_method("_refresh"):
+				spot.call("_refresh")
 		spots.append(spot)
 
 func _build_player() -> void:
@@ -453,7 +519,10 @@ func _build_player() -> void:
 	shape.position = Vector3(0, 0.7, 0)
 	player.add_child(shape)
 	var spawn: Array = site().get("spawn", [0, 2])
-	player.position = Vector3(float(spawn[0]), 0.1, float(spawn[1]))
+	var spawn_y := 0.1
+	if _terrain:
+		spawn_y = _terrain.sample(float(spawn[0]), float(spawn[1]))
+	player.position = Vector3(float(spawn[0]), spawn_y, float(spawn[1]))
 	_explorer_mesh(player)
 	add_child(player)
 	cam.global_position = player.global_position + Vector3(0, 3.5, 6.4)
@@ -795,8 +864,8 @@ func _tent(pos: Vector3) -> void:
 	n.add_child(light)
 	add_child(n)
 
-func _mat(color: Color) -> StandardMaterial3D:
+func _mat(color: Color, rough := 0.72) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
-	mat.roughness = 0.72
+	mat.roughness = rough
 	return mat

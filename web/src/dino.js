@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { buildFossil, buildLiving, setRigQuality, stepRig } from "./dino_rig.js";
 
 function material(color, extra = {}) {
   return new THREE.MeshStandardMaterial({
@@ -24,7 +25,9 @@ function addMesh(parent, name, boneId, geometry, pos, rot, scale, mat) {
   return mesh;
 }
 
-export function buildDino(dino, mode = "living") {
+export function buildDino(dino, mode = "living", quality = "medium") {
+  if (mode === "living") return buildLiving(dino, quality);
+  if (mode === "ghost" || mode === "fossil") return buildFossil(dino);
   const spec = dino.build;
   const pal = dino.palette;
   const root = new THREE.Group();
@@ -154,6 +157,7 @@ export function buildDino(dino, mode = "living") {
 }
 
 export function animateDino(root, time) {
+  if (stepRig(root, time)) return;
   const anim = root.userData.anim || "idle";
   const walking = anim === "walk";
   const swing = walking ? Math.sin(time * 6.2) : 0;
@@ -184,6 +188,8 @@ export function animateDino(root, time) {
   const bob = walking ? Math.abs(Math.sin(time * 6.2)) * 0.045 : Math.sin(time * 2) * 0.02;
   root.position.y = (root.userData.baseY || 0) + bob;
 }
+
+export { setRigQuality };
 
 export function setBoneState(root, boneId, state) {
   root.traverse((child) => {

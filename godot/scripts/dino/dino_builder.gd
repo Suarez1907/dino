@@ -3,19 +3,38 @@ extends RefCounted
 const Actor := preload("res://scripts/dino/dino_actor.gd")
 
 static func build(dino: Dictionary, mode: String) -> Node3D:
-	var glb := "res://assets/models/%s.glb" % str(dino.get("id", ""))
-	if mode == "living" and ResourceLoader.exists(glb):
+	var id := str(dino.get("id", ""))
+	var glb := "res://assets/models/%s.glb" % id if mode == "living" else "res://assets/models/%s_skeleton.glb" % id
+	if ResourceLoader.exists(glb):
 		var packed = load(glb)
 		if packed is PackedScene:
 			var imported := (packed as PackedScene).instantiate() as Node3D
-			if imported == null:
-				return _build_procedural(dino, mode)
-			imported.set_script(Actor)
-			imported.set("parts", {})
-			imported.set("mode", "living")
-			imported.set("anim", "idle")
-			return imported
+			if imported != null:
+				imported.set_script(Actor)
+				var parts := {}
+				if mode != "living":
+					_index_bones(imported, parts)
+				imported.set("parts", parts)
+				imported.set("mode", mode)
+				imported.set("anim", "idle" if mode == "living" else "ghost")
+				return imported
 	return _build_procedural(dino, mode)
+
+static func _index_bones(node: Node, parts: Dictionary) -> void:
+	if node is MeshInstance3D and "__" in str(node.name):
+		var mesh := node as MeshInstance3D
+		var bone_id := str(node.name).split("__")[0]
+		var fossil := _fossil()
+		var ghost := _ghost()
+		mesh.set_meta("bone_id", bone_id)
+		mesh.set_meta("fossil_mat", fossil)
+		mesh.set_meta("ghost_mat", ghost)
+		mesh.set_meta("live_mat", fossil)
+		mesh.set_meta("base_rot", mesh.rotation)
+		mesh.material_override = ghost
+		parts[str(node.name)] = mesh
+	for child in node.get_children():
+		_index_bones(child, parts)
 
 static func _build_procedural(dino: Dictionary, mode: String) -> Node3D:
 	var spec: Dictionary = dino.get("build", {})
@@ -258,6 +277,6 @@ static func _ghost() -> StandardMaterial3D:
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.emission_enabled = true
 	mat.emission = Color(0.7, 0.9, 1.0)
-	mat.emission_energy_multiplier = 0.18
+	mat.emission_energy_multiplier = 0.05
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return mat

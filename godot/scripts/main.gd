@@ -252,6 +252,7 @@ func show_settings() -> void:
 	box.add_child(_toggle(Locale.t("colorblind"), "colorblind"))
 	box.add_child(_toggle(Locale.t("guide_arrow"), "guide_arrow"))
 	box.add_child(_toggle(Locale.t("effects"), "effects"))
+	box.add_child(_quality_button())
 	box.add_child(_toggle(Locale.t("haptics"), "haptics"))
 	box.add_child(Ui.label(Locale.t("save_note"), 18))
 	_add(box, Locale.t("back"), "teal", show_menu)
@@ -271,6 +272,19 @@ func _slider(title: String, key: String) -> VBoxContainer:
 	)
 	box.add_child(slider)
 	return box
+
+func _quality_button() -> Button:
+	var q := str(GameState.settings.get("quality", "medium"))
+	var btn := Ui.button("%s: %s" % [Locale.t("quality"), Locale.t("quality_" + q)], "cream")
+	btn.pressed.connect(func():
+		var order := ["low", "medium", "high"]
+		var index := order.find(q)
+		if index < 0:
+			index = 1
+		GameState.set_setting("quality", order[(index + 1) % order.size()])
+		show_settings()
+	)
+	return btn
 
 func _toggle(title: String, key: String) -> Button:
 	var on := bool(GameState.settings[key])

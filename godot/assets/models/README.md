@@ -1,13 +1,14 @@
-# Model swap
+# Dinosaur models
 
-Runtime dinosaurs are built in code from `shared/data/dinosaurs.json` (`build` block: body size, neck, tail, horns, plates, stance).
+Living dinosaurs and museum skeletons are glTF files in this folder. They are generated from `web/src/dino_rig.js`:
 
-To replace a species with a real mesh later:
+```bash
+cd web
+node scripts/export_dinos.mjs
+```
 
-1. Export a glTF/GLB that faces -Z, stands on y = 0, and uses roughly the same height as the procedural model (about 1.5–3 m).
-2. Put it at `res://assets/models/<dino_id>.glb` (for example `trex.glb`).
-3. `scripts/dino/dino_builder.gd` already checks `res://assets/models/<id>.glb` and uses it for the living dinosaur. The dig clues and the museum ghost stay procedural so the puzzle bone ids (`skull`, `torso`, `tail`, `leg_l`, `leg_r`, and `frill` / `plates` / `neck` / `arm`) keep working. Give the glTF its own walk, eat, and roar animations if you want those to replace the procedural bob.
+Each `<id>.glb` is a skinned mesh with clips named `idle`, `walk`, `eat`, and `roar`, plus a `body_lod` mesh used on the Low graphics setting. `<id>_skeleton.glb` is the museum assembly. Mesh names start with the puzzle bone id (`skull__0`, `leg_l__3`, and so on).
 
-The web prototype mirrors the same JSON in `web/src/dino.js`. Update both builders, or generate the glTF once and load it in both engines.
+`scripts/dino/dino_builder.gd` loads these files. If a file is missing, it falls back to the older capsule builder.
 
-No third-party meshes are shipped. Everything currently on screen is procedural.
+The meshes face -Z and stand on y = 0. They are original CC0 work. Sources and the Poly Haven terrain textures are in `docs/ASSET_LICENSES.md`.

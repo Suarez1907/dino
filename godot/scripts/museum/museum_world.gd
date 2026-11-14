@@ -264,27 +264,47 @@ func _room() -> void:
 	var world_env := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.93, 0.86, 0.74)
-	env.ambient_light_energy = 0.7
+	env.background_color = Color(0.16, 0.13, 0.11)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.55, 0.48, 0.4)
+	env.ambient_light_energy = 0.35
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.glow_enabled = bool(GameState.settings.effects)
-	env.glow_intensity = 0.25
-	env.ssao_enabled = bool(GameState.settings.effects)
-	env.ssao_radius = 0.8
-	env.ssao_intensity = 0.8
+	env.tonemap_exposure = 1.08
+	var fx := bool(GameState.settings.effects) and str(GameState.settings.get("quality", "medium")) != "low"
+	env.glow_enabled = fx
+	env.glow_intensity = 0.35
+	env.ssao_enabled = fx
+	env.ssao_radius = 0.7
+	env.ssao_intensity = 1.1
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	world_env.environment = env
 	add_child(world_env)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, 20, 0)
-	sun.light_energy = 1.1
-	sun.shadow_enabled = true
-	sun.shadow_blur = 1.8
+	sun.light_energy = 0.35
+	sun.shadow_enabled = false
 	add_child(sun)
+	var spot := SpotLight3D.new()
+	spot.position = Vector3(0.2, 4.3, 1.5)
+	spot.rotation_degrees = Vector3(-78, 0, 0)
+	spot.light_color = Color(1.0, 0.93, 0.78)
+	spot.light_energy = 8.0
+	spot.spot_range = 12.0
+	spot.spot_angle = 32.0
+	spot.spot_attenuation = 0.6
+	spot.shadow_enabled = str(GameState.settings.get("quality", "medium")) != "low"
+	add_child(spot)
+	spot.look_at(Vector3(0, 0.9, 0))
 	var floor_m := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(18, 14)
 	floor_m.mesh = plane
-	floor_m.material_override = _mat(Color("c9844a"), 0.85)
+	var floor_mat := _mat(Color("c9844a"), 0.16)
+	floor_mat.metallic = 0.14
+	floor_mat.clearcoat_enabled = true
+	floor_mat.clearcoat = 0.7
+	floor_mat.clearcoat_roughness = 0.22
+	floor_m.material_override = floor_mat
 	add_child(floor_m)
 	var wall := MeshInstance3D.new()
 	var box := BoxMesh.new()
@@ -300,12 +320,6 @@ func _room() -> void:
 	rug.position = Vector3(0, 0.04, 0.4)
 	rug.material_override = _mat(Color("1f7a8c"), 0.8)
 	add_child(rug)
-	var spot := OmniLight3D.new()
-	spot.position = Vector3(0, 3.4, 2.2)
-	spot.light_color = Color(1.0, 0.93, 0.8)
-	spot.light_energy = 1.2
-	spot.omni_range = 9.0
-	add_child(spot)
 
 func _mat(color: Color, rough := 0.7) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()

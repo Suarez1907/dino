@@ -85,6 +85,12 @@ Görseller: [docs/concept/STYLE.md](docs/concept/STYLE.md).
 
 Modeller prosedüreldir. Bir `.glb` koymak için `godot/assets/models/README.md`. Lisanslar: [docs/LICENSES.md](docs/LICENSES.md). Nunito, SIL OFL 1.1.
 
+## Görünüm
+
+Dinozorlar `web/src/dino_rig.js` içinde üretilir: iskelet, idle / walk / eat / roar, ve düşük ayrıntılı bir gövde. Godot kopyaları `godot/assets/models/` glTF dosyalarıdır. Müze iskeleti aynı oranlarda kemik parçalarıdır. Ayarlardaki **Görüntü kalitesi** düşük, orta veya yüksektir. Düşük, gölgeyi, SSAO'yu ve sis ışınını kapatır ve seyrek arazi kullanır. Yüksek, daha yumuşak gölge, parıltı ve (masaüstünde) hafif hacim sisi açar.
+
+Zemin yükseklik haritasıdır. Çöl kumu, orman toprağı, kaya ve kar dokuları eğimle karışır. Kazı çukuru zemini alçaltır. Dokular ve gökyüzü CC0'dır: [docs/ASSET_LICENSES.md](docs/ASSET_LICENSES.md).
+
 ## Sınırlar
 
 - Dinozorlar düşük çokgen ve sevimli. Yayın kalitesinde bir iskelet için glTF takılır.
@@ -177,6 +183,12 @@ Pictures: [docs/concept/STYLE.md](docs/concept/STYLE.md).
 | `shared/data/strings.json` | interface copy, Turkish and English |
 
 Models are procedural. Drop a `.glb` using `godot/assets/models/README.md`. Licenses: [docs/LICENSES.md](docs/LICENSES.md). Nunito is SIL OFL 1.1.
+
+## Look
+
+Dinosaurs are built in `web/src/dino_rig.js`: a skeleton, idle / walk / eat / roar, and a low-detail body. Godot uses the glTF copies in `godot/assets/models/`. The museum skeleton uses bone pieces in the same proportions. **Graphics quality** in Settings is low, medium, or high. Low turns off shadows, SSAO, and the light shaft, and uses a coarser terrain. High uses softer shadows, bloom, and, on desktop, a light volumetric fog.
+
+The ground is a heightmap. Sand, forest floor, rock, and snow textures blend with the slope. A dig hole lowers the ground. Textures and the sky are CC0: [docs/ASSET_LICENSES.md](docs/ASSET_LICENSES.md).
 
 ## Limits
 

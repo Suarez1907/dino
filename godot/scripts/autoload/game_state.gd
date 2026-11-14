@@ -17,6 +17,7 @@ var settings := {
 	"colorblind": false,
 	"guide_arrow": false,
 	"effects": true,
+	"quality": "medium",
 	"session_minutes": 0,
 	"pin": "",
 }

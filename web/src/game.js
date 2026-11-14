@@ -2,16 +2,21 @@ import * as THREE from "three";
 import { catalog, dinosaurs, sites, dinoById, siteById, pick, t } from "./content.js";
 import { allPlaced, holdDig, siteUnlocked, starsFor, tapTool } from "./rules.js";
 import { createAudio } from "./audio.js";
-import { animateDino, buildDino, buildExplorer, buildPati, setBoneState } from "./dino.js";
+import { animateDino, buildDino, buildExplorer, buildPati, setBoneState, setRigQuality } from "./dino.js";
 import {
   addProps,
   addSpot,
+  applyGrade,
   burstDust,
+  carveTerrain,
   clearScene,
   createView,
+  dressRoom,
   dressWorld,
+  loadLook,
   makeDust,
   resizeView,
+  updateAtmosphere,
   updateDust,
 } from "./world.js";
 
@@ -31,13 +36,14 @@ const defaultSave = () => ({
     colorblind: false,
     guideArrow: false,
     effects: true,
+    quality: "medium",
     sessionMinutes: 0,
     pin: "",
   },
   sites: {},
 });
 
-export function startGame(app) {
+export async function startGame(app) {
   const canvas = app.querySelector("#view");
   const ui = app.querySelector("#ui");
   let view;
@@ -51,6 +57,8 @@ export function startGame(app) {
   const save = loadSave();
   const params = new URLSearchParams(location.search);
   const shot = params.get("shot");
+  const siteParam = params.get("site");
+  const shotSite = sites.some((item) => item.id === siteParam) ? siteParam : sites[0].id;
   if (params.get("lang")) save.lang = params.get("lang") === "en" ? "en" : "tr";
   const state = {
     save,
@@ -105,19 +113,21 @@ export function startGame(app) {
   ui.addEventListener("pointermove", onPointerMove);
   window.addEventListener("pointerup", onPointerUp);
 
+  await loadLook(view.renderer);
+
   if (shot === "dig") {
-    state.siteId = sites[0].id;
+    state.siteId = shotSite;
     enterDig(true);
   } else if (shot === "museum") {
-    prepareShotBones(sites[0].id, true);
-    enterMuseum(sites[0].id);
+    prepareShotBones(shotSite, true);
+    enterMuseum(shotSite);
   } else if (shot === "reveal") {
-    prepareShotBones(sites[0].id, true);
-    sitesBones(sites[0].id).forEach((bone) => {
+    prepareShotBones(shotSite, true);
+    sitesBones(shotSite).forEach((bone) => {
       bone.placed = true;
     });
-    persistSite(sites[0].id);
-    enterReveal(sites[0].id);
+    persistSite(shotSite);
+    enterReveal(shotSite);
   } else if (shot === "passport") {
     save.sites[sites[0].id] = { ...(save.sites[sites[0].id] || {}), revealed: true };
     if (!save.stickers.includes("first_bone")) save.stickers.push("first_bone", "gentle");
@@ -133,14 +143,15 @@ export function startGame(app) {
     last = now;
     state.time += dt;
     tick(dt);
-    if (save.settings.effects) view.composer.render();
+    applyGrade(view, save.settings);
+    if (save.settings.effects && save.settings.quality !== "low") view.composer.render();
     else view.renderer.render(view.scene, view.camera);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
   setTimeout(() => {
     document.documentElement.dataset.ready = "1";
-  }, 450);
+  }, 700);
 
   function lang() {
     return save.lang === "en" ? "en" : "tr";
@@ -175,8 +186,8 @@ export function startGame(app) {
       if (state.drag) moveProxy(state.drag.x, state.drag.y);
     } else if (state.screen === "reveal") tickReveal(dt);
     if (state.dust) updateDust(state.dust, dt);
-    view.ssao.enabled = Boolean(save.settings.effects);
-    view.bloom.strength = save.settings.effects ? 0.28 : 0;
+    updateAtmosphere(view.scene, dt);
+    if (state.dino) setRigQuality(state.dino, save.settings.quality || "medium");
   }
 
   function tickDig(dt) {
@@ -198,8 +209,11 @@ export function startGame(app) {
       state.player.rotation.y = Math.atan2(move.x, move.z);
       state.moved += move.length() * dt;
     }
+    const sample = view.scene.userData.sample;
+    if (sample && state.player) state.player.position.y = sample(state.player.position.x, state.player.position.z);
     if (state.pati && state.player) {
       const dest = state.player.position.clone().add(new THREE.Vector3(-1.15, 0, 0.8));
+      if (sample) dest.y = sample(dest.x, dest.z);
       state.pati.position.lerp(dest, 1 - Math.exp(-2.4 * dt));
     }
     const focus = state.player ? state.player.position.clone().add(new THREE.Vector3(0, 1.1, 0)) : new THREE.Vector3();
@@ -214,7 +228,7 @@ export function startGame(app) {
     let best = 1.9;
     for (const spot of state.spots) {
       if (spot.collected) continue;
-      const dist = state.player.position.distanceTo(new THREE.Vector3(spot.pos[0], 0, spot.pos[1]));
+      const dist = Math.hypot(state.player.position.x - spot.pos[0], state.player.position.z - spot.pos[1]);
       if (dist < best) {
         best = dist;
         state.near = spot;
@@ -351,9 +365,9 @@ export function startGame(app) {
     state.screen = "dig";
     const site = siteById(state.siteId);
     clearScene(view.scene);
-    const dressed = dressWorld(view.scene, site.biome);
+    const dressed = dressWorld(view.scene, site.biome, { quality: save.settings.quality, siteId: site.id });
     state.sun = dressed.sun;
-    addProps(view.scene, site);
+    addProps(view.scene, site, save.settings.quality);
     state.spots = runtimeSpots(site.id);
     state.groups = new Map();
     for (const spot of state.spots) {
@@ -363,9 +377,12 @@ export function startGame(app) {
     }
     state.player = buildExplorer();
     const spawn = site.spawn || [0, 2];
-    state.player.position.set(spawn[0], 0, spawn[1]);
+    const stand = view.scene.userData.sample || (() => 0);
+    state.player.position.set(spawn[0], stand(spawn[0], spawn[1]), spawn[1]);
     if (framed && state.spots[0]) {
-      state.player.position.set(state.spots[0].pos[0] - 1.2, 0, state.spots[0].pos[1] - 0.4);
+      const sx = state.spots[0].pos[0] - 1.2;
+      const sz = state.spots[0].pos[1] - 0.4;
+      state.player.position.set(sx, stand(sx, sz), sz);
       state.near = state.spots[0];
     }
     view.scene.add(state.player);
@@ -440,9 +457,9 @@ export function startGame(app) {
     const site = siteById(siteId);
     const info = dinoById(site.dino);
     clearScene(view.scene);
-    dressRoom();
+    dressRoom(view.scene, save.settings.quality);
     state.spots = runtimeSpots(siteId);
-    state.dino = buildDino(info, "ghost");
+    state.dino = buildDino(info, "ghost", save.settings.quality);
     state.dino.position.set(0, 0.05, 0);
     state.dino.rotation.y = 0.5;
     state.dino.scale.multiplyScalar(1.15);
@@ -475,8 +492,8 @@ export function startGame(app) {
     const site = siteById(siteId);
     const info = dinoById(site.dino);
     clearScene(view.scene);
-    dressWorld(view.scene, site.biome === "ice" ? "ice" : site.biome === "desert" ? "desert" : "forest", { plain: true });
-    state.dino = buildDino(info, "living");
+    dressWorld(view.scene, site.biome, { plain: true, quality: save.settings.quality, siteId: site.id });
+    state.dino = buildDino(info, "living", save.settings.quality);
     state.dino.scale.multiplyScalar(info.id === "velociraptor" ? 1.7 : 1.35);
     state.dino.rotation.y = Math.PI * 0.85;
     view.scene.add(state.dino);
@@ -552,6 +569,7 @@ export function startGame(app) {
       ${toggle("colorblind", text("colorblind"))}
       ${toggle("guideArrow", text("guide_arrow"))}
       ${toggle("effects", text("effects"))}
+      <button data-quality="1">${text("quality")}: ${text(`quality_${s.quality || "medium"}`)}</button>
       ${toggle("haptics", text("haptics"))}
       <p class="hint">${text("save_note")}</p>
       <button data-act="menu">${text("back")}</button></section>`;
@@ -603,6 +621,15 @@ export function startGame(app) {
     if (act) runAct(act.dataset.act, act.dataset.arg);
     const digit = event.target.closest("[data-digit]");
     if (digit && state.gate) pressDigit(digit.dataset.digit);
+    const quality = event.target.closest("[data-quality]");
+    if (quality) {
+      const order = ["low", "medium", "high"];
+      const current = order.indexOf(save.settings.quality || "medium");
+      save.settings.quality = order[(current + 1) % order.length];
+      writeSave();
+      showSettings();
+      return;
+    }
     const set = event.target.closest("[data-set]");
     if (set) {
       save.settings[set.dataset.set] = !save.settings[set.dataset.set];
@@ -876,6 +903,7 @@ export function startGame(app) {
     group.userData.mound.scale.y = Math.max(0.15, 0.5 - total * 0.35);
     group.userData.hole.visible = total > 0.05;
     group.userData.hole.scale.setScalar(0.6 + total);
+    refreshSpotVisual(spot);
   }
 
   function refreshSpotVisual(spot) {
@@ -886,6 +914,11 @@ export function startGame(app) {
       group.userData.hole.visible = true;
       group.userData.hole.scale.setScalar(1.3);
     }
+    const holes = state.spots.map((item) => {
+      const total = item.collected ? 1 : (item.layer + (item.progress || 0)) / item.layers.length;
+      return { x: item.pos[0], z: item.pos[1], radius: 1.25, depth: total * 0.55 };
+    }).filter((item) => item.depth > 0.02);
+    carveTerrain(view.scene, holes);
   }
 
   function say(message) {
@@ -973,37 +1006,16 @@ export function startGame(app) {
     const site = siteById(siteId);
     const info = dinoById(site.dino);
     clearScene(view.scene);
-    dressWorld(view.scene, site.biome);
-    addProps(view.scene, site);
-    state.dino = buildDino(info, "living");
-    state.dino.position.set(3.6, 0, 2.2);
+    dressWorld(view.scene, site.biome, { quality: save.settings.quality, siteId: site.id });
+    addProps(view.scene, site, save.settings.quality);
+    state.dino = buildDino(info, "living", save.settings.quality);
+    state.dino.position.set(3.6, view.scene.userData.sample?.(3.6, 2.2) || 0, 2.2);
     state.dino.rotation.y = 0.6;
     state.dino.userData.anim = "idle";
     view.scene.add(state.dino);
     state.player = buildExplorer();
     state.player.position.set(-1.4, 0, 1.2);
     view.scene.add(state.player);
-  }
-
-  function dressRoom() {
-    view.scene.background = new THREE.Color("#f3e6d0");
-    view.scene.fog = new THREE.Fog("#f3e6d0", 12, 28);
-    const hemi = new THREE.HemisphereLight("#fff4e4", "#c9844a", 0.8);
-    view.scene.add(hemi);
-    const sun = new THREE.DirectionalLight("#fff6e8", 1.4);
-    sun.position.set(4, 8, 6);
-    sun.castShadow = true;
-    view.scene.add(sun);
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 32), new THREE.MeshStandardMaterial({ color: "#d7a15a", roughness: 0.85 }));
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    view.scene.add(floor);
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(14, 6, 0.3), new THREE.MeshStandardMaterial({ color: "#f7f1e6" }));
-    wall.position.set(0, 3, -4.2);
-    view.scene.add(wall);
-    const rug = new THREE.Mesh(new THREE.BoxGeometry(6, 0.06, 3), new THREE.MeshStandardMaterial({ color: "#1f7a8c" }));
-    rug.position.set(0, 0.04, 0.2);
-    view.scene.add(rug);
   }
 
   function slider(key, label, value) {

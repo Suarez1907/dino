@@ -5,7 +5,9 @@ This project does not ship third-party 3D models, sound effects, or music.
 | Piece | License | Notes |
 | --- | --- | --- |
 | Game code (`godot/`, `web/src`, `tools/`) | MIT | See `LICENSE` |
-| Procedural meshes, icons, splash, ground shader | CC0 | Drawn or generated in this repo |
+| Dinosaur glTF meshes and museum skeletons | CC0 | Original meshes. See [ASSET_LICENSES.md](ASSET_LICENSES.md). |
+| Poly Haven sand, grass, rock, snow, and sky | CC0 | `godot/assets/textures/`. See [ASSET_LICENSES.md](ASSET_LICENSES.md). |
+| Procedural icons, splash, and remaining props | CC0 | Drawn or generated in this repo |
 | Sound effects and the soft music loop | CC0 | Generated at runtime (Godot `AudioStreamWAV`, Web Audio). No sampled recordings. |
 | Voice | n/a | Device text-to-speech. Optional `.ogg` files you add later keep their own license. |
 | Nunito | SIL Open Font License 1.1 | `godot/assets/fonts/Nunito-Bold.ttf` and `web/public/fonts/Nunito-Bold.ttf`. Copyright 2014 The Nunito Project Authors. |

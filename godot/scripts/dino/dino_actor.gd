@@ -7,15 +7,49 @@ var time := 0.0
 var hint_bone := ""
 var placed := {}
 var mode := "living"
+var _player: AnimationPlayer
+var _using_clips := false
 
 func _ready() -> void:
 	base_y = position.y
+	_player = _find_player(self)
+	if _player:
+		for clip_name in ["idle", "walk", "eat", "roar"]:
+			if _player.has_animation(clip_name):
+				_player.get_animation(clip_name).loop_mode = Animation.LOOP_LINEAR
+		_using_clips = _player.has_animation("idle")
+		if _using_clips:
+			_player.play("idle")
+	_apply_lod()
+
+func _find_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node
+	for child in node.get_children():
+		var found := _find_player(child)
+		if found:
+			return found
+	return null
+
+func _apply_lod() -> void:
+	var low := str(GameState.settings.get("quality", "medium")) == "low"
+	var body := find_child("body", true, false)
+	var lod := find_child("body_lod", true, false)
+	if body:
+		body.visible = not low
+	if lod:
+		lod.visible = low
 
 func capture_base() -> void:
 	base_y = position.y
 
 func _process(delta: float) -> void:
 	time += delta
+	if _using_clips:
+		var want := anim if anim in ["idle", "walk", "eat", "roar"] else "idle"
+		if _player.current_animation != want and _player.has_animation(want):
+			_player.play(want)
+		return
 	var walking := anim == "walk"
 	var swing := sin(time * 6.2) if walking else 0.0
 	_swing("leg_fl", swing)

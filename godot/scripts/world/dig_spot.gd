@@ -138,6 +138,9 @@ func _refresh() -> void:
 	if hole:
 		hole.scale = Vector3(0.4 + total * 0.8, 0.15 + total * 0.7, 0.4 + total * 0.8)
 		hole.visible = total > 0.05 or collected
+	var terrain := get_parent().get_node_or_null("Terrain") if get_parent() else null
+	if terrain and terrain.has_method("carve") and total > 0.02:
+		terrain.carve(bone_id, global_position.x, global_position.z, 1.25, total * 0.55)
 
 func _build() -> void:
 	var tint := Color(0.62, 0.42, 0.28)
