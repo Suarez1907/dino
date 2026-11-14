@@ -20,8 +20,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Prepare Godot home and Android SDK
+        # The godot-ci image runs steps with /bin/sh (dash), which rejects pipefail.
+        shell: sh
         run: |
-          set -euo pipefail
+          set -eu
           if [ "$(id -u)" != "0" ]; then
             mkdir -p "$HOME/.local/share/godot/export_templates" "$HOME/.config"
             cp -a /root/.config/godot "$HOME/.config/godot"
