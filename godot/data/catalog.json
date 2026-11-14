@@ -1,0 +1,42 @@
+{
+  "tools": [
+    {"id": "shovel", "tr": "Kürek", "en": "Shovel", "soils": ["loose"], "tint": "#e07a3d"},
+    {"id": "pickaxe", "tr": "Kazma", "en": "Pickaxe", "soils": ["rock"], "tint": "#8d6a4a"},
+    {"id": "trowel", "tr": "Mala", "en": "Trowel", "soils": ["compact"], "tint": "#d7a441"},
+    {"id": "brush", "tr": "Fırça", "en": "Brush", "soils": ["fragile"], "tint": "#ef6f9a"},
+    {"id": "spray", "tr": "Sprey", "en": "Spray", "soils": ["clay"], "tint": "#3aa0d8"},
+    {"id": "chisel", "tr": "Keski", "en": "Chisel", "soils": ["matrix"], "tint": "#7d8b99"}
+  ],
+  "soils": [
+    {"id": "loose", "tr": "Gevşek toprak", "en": "Loose soil", "fragile": false, "feel": "soft", "icon": "pile", "hint": {"tr": "Üst toprak yumuşak ve dağılgan. Kürek yeterli.", "en": "The topsoil is soft and crumbly. A shovel is enough."}},
+    {"id": "rock", "tr": "Sert kaya", "en": "Hard rock", "fragile": false, "feel": "hard", "icon": "rock", "hint": {"tr": "Burası kaya gibi sert. Kazma gerekir.", "en": "This spot is as hard as rock. Use a pickaxe."}},
+    {"id": "compact", "tr": "Sıkı toprak", "en": "Compact soil", "fragile": false, "feel": "firm", "icon": "block", "hint": {"tr": "Toprak sıkışmış. Mala ile dikkatli kaz.", "en": "The soil is packed tight. A trowel works best."}},
+    {"id": "fragile", "tr": "Kırılgan kemik", "en": "Fragile bone", "fragile": true, "feel": "gentle", "icon": "feather", "hint": {"tr": "Kemik hemen yüzeyde. Yalnızca yumuşak fırça.", "en": "The bone is right at the surface. Only a soft brush."}},
+    {"id": "clay", "tr": "Kurumuş kil", "en": "Dried clay", "fragile": false, "feel": "soft", "icon": "drops", "hint": {"tr": "Kil kurumuş ve çatlak. Önce su spreyi.", "en": "The clay is dry and cracked. Spray water first."}},
+    {"id": "matrix", "tr": "Taş yatak", "en": "Stone matrix", "fragile": true, "feel": "hard", "icon": "gem", "hint": {"tr": "Kemik taşın içinde. Çekiç ve keski ile yavaş çalış.", "en": "The bone sits inside stone. Work slowly with hammer and chisel."}}
+  ],
+  "clues": [
+    {"id": "soil_tint", "tr": "Toprağın rengi azıcık farklı", "en": "The soil color is a tiny bit different", "shape": "flag"},
+    {"id": "bump", "tr": "Küçük bir tümsek", "en": "A small bump", "shape": "mound"},
+    {"id": "bone_tip", "tr": "Minik bir kemik ucu", "en": "A tiny bone tip", "shape": "bone"},
+    {"id": "birds", "tr": "Kuşlar toprağı gagalıyor", "en": "Birds are pecking the ground", "shape": "bird"},
+    {"id": "sparkle", "tr": "Soluk bir ışıltı", "en": "A faint sparkle", "shape": "star"},
+    {"id": "cracks", "tr": "İnce çatlaklar", "en": "Fine cracks", "shape": "zig"},
+    {"id": "footprint", "tr": "Fosil bir ayak izi", "en": "A fossil footprint", "shape": "print"}
+  ],
+  "stickers": [
+    {"id": "first_bone", "tr": "İlk kemik", "en": "First bone", "emoji": "🦴"},
+    {"id": "gentle", "tr": "Nazik eller", "en": "Gentle hands", "emoji": "🤲"},
+    {"id": "desert", "tr": "Çöl kaşifi", "en": "Desert scout", "emoji": "🏜️"},
+    {"id": "forest", "tr": "Orman kaşifi", "en": "Forest scout", "emoji": "🌲"},
+    {"id": "ice", "tr": "Buz kaşifi", "en": "Ice scout", "emoji": "❄️"},
+    {"id": "builder", "tr": "İskelet ustası", "en": "Skeleton builder", "emoji": "🧩"},
+    {"id": "roar", "tr": "Kükreme kulübü", "en": "Roar club", "emoji": "📣"},
+    {"id": "passport", "tr": "Tam pasaport", "en": "Full passport", "emoji": "📒"}
+  ],
+  "biomes": [
+    {"id": "desert", "tr": "Çöl", "en": "Desert"},
+    {"id": "forest", "tr": "Orman", "en": "Forest"},
+    {"id": "ice", "tr": "Buz", "en": "Ice"}
+  ]
+}

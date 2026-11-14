@@ -1,0 +1,8 @@
+.godot/
+android/
+build/
+*.keystore
+*.jks
+export.cfg
+.mono/
+.DS_Store
