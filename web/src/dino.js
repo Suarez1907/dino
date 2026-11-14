@@ -1,5 +1,73 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 import { buildFossil, buildLiving, setRigQuality, stepRig } from "./dino_rig.js";
+import trexUrl from "../../godot/assets/models/trex.glb?url";
+import triUrl from "../../godot/assets/models/triceratops.glb?url";
+import stegoUrl from "../../godot/assets/models/stegosaurus.glb?url";
+import brachioUrl from "../../godot/assets/models/brachiosaurus.glb?url";
+import raptorUrl from "../../godot/assets/models/velociraptor.glb?url";
+import trexSkelUrl from "../../godot/assets/models/trex_skeleton.glb?url";
+import triSkelUrl from "../../godot/assets/models/triceratops_skeleton.glb?url";
+import stegoSkelUrl from "../../godot/assets/models/stegosaurus_skeleton.glb?url";
+import brachioSkelUrl from "../../godot/assets/models/brachiosaurus_skeleton.glb?url";
+import raptorSkelUrl from "../../godot/assets/models/velociraptor_skeleton.glb?url";
+
+const MODEL_URLS = {
+  trex: trexUrl,
+  triceratops: triUrl,
+  stegosaurus: stegoUrl,
+  brachiosaurus: brachioUrl,
+  velociraptor: raptorUrl,
+  trex_skeleton: trexSkelUrl,
+  triceratops_skeleton: triSkelUrl,
+  stegosaurus_skeleton: stegoSkelUrl,
+  brachiosaurus_skeleton: brachioSkelUrl,
+  velociraptor_skeleton: raptorSkelUrl,
+};
+const modelCache = {};
+
+export async function preloadDinos() {
+  const loader = new GLTFLoader();
+  await Promise.all(Object.entries(MODEL_URLS).map(async ([id, url]) => {
+    modelCache[id] = await loader.loadAsync(url);
+  }));
+}
+
+function fromGlb(dino, mode) {
+  const key = mode === "living" ? dino.id : `${dino.id}_skeleton`;
+  const source = modelCache[key];
+  if (!source) return null;
+  const root = cloneSkinned(source.scene);
+  if (mode === "living") {
+    root.userData.mixer = new THREE.AnimationMixer(root);
+    root.userData.actions = {};
+    for (const clip of source.animations) {
+      const action = root.userData.mixer.clipAction(clip);
+      action.loop = THREE.LoopRepeat;
+      root.userData.actions[clip.name] = action;
+    }
+    if (root.userData.actions.idle) root.userData.actions.idle.play();
+    root.userData.current = "idle";
+    root.userData.anim = "idle";
+    root.userData.rigged = true;
+    root.userData.mode = "living";
+  } else {
+    root.traverse((child) => {
+      if (!child.isMesh) return;
+      child.userData.boneId = child.name.split("__")[0];
+      child.material = child.material.clone();
+      child.material.transparent = true;
+      child.material.opacity = 0.55;
+      child.material.color = new THREE.Color("#d9cbb4");
+      child.material.emissive = new THREE.Color("#9fd6ff");
+      child.material.emissiveIntensity = 0.04;
+    });
+    root.userData.anim = "ghost";
+    root.userData.mode = "ghost";
+  }
+  return root;
+}
 
 function material(color, extra = {}) {
   return new THREE.MeshStandardMaterial({
@@ -26,6 +94,8 @@ function addMesh(parent, name, boneId, geometry, pos, rot, scale, mat) {
 }
 
 export function buildDino(dino, mode = "living", quality = "medium") {
+  const loaded = fromGlb(dino, mode);
+  if (loaded) return loaded;
   if (mode === "living") return buildLiving(dino, quality);
   if (mode === "ghost" || mode === "fossil") return buildFossil(dino);
   const spec = dino.build;

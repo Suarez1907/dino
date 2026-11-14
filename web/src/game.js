@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { catalog, dinosaurs, sites, dinoById, siteById, pick, t } from "./content.js";
 import { allPlaced, holdDig, siteUnlocked, starsFor, tapTool } from "./rules.js";
 import { createAudio } from "./audio.js";
-import { animateDino, buildDino, buildExplorer, buildPati, setBoneState, setRigQuality } from "./dino.js";
+import { animateDino, buildDino, buildExplorer, buildPati, preloadDinos, setBoneState, setRigQuality } from "./dino.js";
 import {
   addProps,
   addSpot,
@@ -114,6 +114,7 @@ export async function startGame(app) {
   window.addEventListener("pointerup", onPointerUp);
 
   await loadLook(view.renderer);
+  await preloadDinos();
 
   if (shot === "dig") {
     state.siteId = shotSite;
@@ -339,6 +340,7 @@ export async function startGame(app) {
         <button class="teal" data-act="museum">${text("museum")}</button>
         <button class="sun" data-act="passport">${text("passport")}</button>
         <button data-act="settings">${text("settings")}</button>
+        <button data-act="credits">${text("credits")}</button>
         <button data-act="parents">${text("parents")}</button>
         <div class="row">
           <button data-act="lang" data-arg="tr" class="${lang() === "tr" ? "primary" : ""}">${text("lang_tr")}</button>
@@ -557,6 +559,11 @@ export async function startGame(app) {
     ui.innerHTML = `<section class="card wide scroll"><h1>${text("passport")}</h1><div class="grid">${cards}</div><h2>${text("album")}</h2><div class="row wrap">${stickers}</div><button data-act="menu">${text("back")}</button></section>`;
   }
 
+  function showCredits() {
+    state.screen = "menu";
+    ui.innerHTML = `<section class="card scroll"><h1>${text("credits")}</h1><p>${text("credits_body")}</p><button data-act="menu">${text("back")}</button></section>`;
+  }
+
   function showSettings() {
     state.screen = "settings";
     const s = save.settings;
@@ -705,6 +712,7 @@ export async function startGame(app) {
     } else if (act === "museum" || act === "museum-now") enterMuseum(state.siteId || sites[0].id);
     else if (act === "passport") showPassport();
     else if (act === "settings") showSettings();
+    else if (act === "credits") showCredits();
     else if (act === "parents") showGate();
     else if (act === "lang") {
       save.lang = arg;

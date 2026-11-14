@@ -84,6 +84,7 @@ func show_menu() -> void:
 	_add(box, Locale.t("museum"), "teal", func(): _open_museum(GameState.first_unlocked_site()))
 	_add(box, Locale.t("passport"), "sun", show_passport)
 	_add(box, Locale.t("settings"), "cream", show_settings)
+	_add(box, Locale.t("credits"), "cream", show_credits)
 	_add(box, Locale.t("parents"), "cream", show_gate)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -239,6 +240,16 @@ func show_passport() -> void:
 		chip.custom_minimum_size = Vector2(140, 64)
 		chip.disabled = true
 		stickers.add_child(chip)
+	_add(box, Locale.t("back"), "teal", show_menu)
+
+func show_credits() -> void:
+	mode = "credits"
+	var box := _center_card()
+	box.add_child(Ui.label(Locale.t("credits"), 40))
+	var body := Ui.label(Locale.t("credits_body"), 22)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.custom_minimum_size = Vector2(640, 180)
+	box.add_child(body)
 	_add(box, Locale.t("back"), "teal", show_menu)
 
 func show_settings() -> void:

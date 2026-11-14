@@ -6,6 +6,8 @@
   "museum": {"tr": "Müze", "en": "Museum"},
   "passport": {"tr": "Dino pasaportu", "en": "Dino passport"},
   "settings": {"tr": "Ayarlar", "en": "Settings"},
+  "credits": {"tr": "Teşekkürler", "en": "Credits"},
+  "credits_body": {"tr": "Dinozor modelleri Grab3D CC0: Tiranozor, Triceratops, Stegosaurus, Brachiosaurus, Velociraptor. Kum, orman toprağı, kaya, kar ve gökyüzü Poly Haven CC0. Ayrıntı docs/ASSET_LICENSES.md.", "en": "Dinosaur models by Grab3D, CC0: T-Rex, Triceratops, Stegosaurus, Brachiosaurus, Velociraptor. Sand, forest floor, rock, snow, and sky by Poly Haven, CC0. Details in docs/ASSET_LICENSES.md."},
   "parents": {"tr": "Ebeveyn köşesi", "en": "Parent corner"},
   "back": {"tr": "Geri", "en": "Back"},
   "menu": {"tr": "Ana menü", "en": "Main menu"},

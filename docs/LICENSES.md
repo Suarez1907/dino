@@ -5,7 +5,7 @@ This project does not ship third-party 3D models, sound effects, or music.
 | Piece | License | Notes |
 | --- | --- | --- |
 | Game code (`godot/`, `web/src`, `tools/`) | MIT | See `LICENSE` |
-| Dinosaur glTF meshes and museum skeletons | CC0 | Original meshes. See [ASSET_LICENSES.md](ASSET_LICENSES.md). |
+| Dinosaur glTF meshes and museum pieces | CC0 | Grab3D sculpts, rigged in this repo. See [ASSET_LICENSES.md](ASSET_LICENSES.md). |
 | Poly Haven sand, grass, rock, snow, and sky | CC0 | `godot/assets/textures/`. See [ASSET_LICENSES.md](ASSET_LICENSES.md). |
 | Procedural icons, splash, and remaining props | CC0 | Drawn or generated in this repo |
 | Sound effects and the soft music loop | CC0 | Generated at runtime (Godot `AudioStreamWAV`, Web Audio). No sampled recordings. |
