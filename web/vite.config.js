@@ -2,6 +2,9 @@ import { defineConfig } from "vite";
 import path from "node:path";
 
 export default defineConfig({
+  // GitHub Pages project sites are served under /<repo>/.
+  // CI sets BASE_PATH (this repo: /dino/). Local dev and preview stay at /.
+  base: process.env.BASE_PATH || "/",
   resolve: {
     alias: {
       "@shared": path.resolve(__dirname, "../shared/data"),

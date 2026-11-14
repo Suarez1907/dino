@@ -2,28 +2,15 @@ name: Android debug APK
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 env:
   GODOT_VERSION: "4.7.2"
 
 jobs:
-  web:
-    name: Web prototype
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Test and build
-        working-directory: web
-        run: |
-          npm ci
-          npm test
-          npm run build
-
   android-debug:
     name: Export debug APK
     runs-on: ubuntu-24.04

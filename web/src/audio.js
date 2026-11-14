@@ -100,7 +100,7 @@ export function createAudio() {
   function speak(text, lang, clipId) {
     if (settings.voice <= 0.01 || !text) return;
     if (clipId && recorded.has(`${clipId}_${lang}`)) {
-      const audio = new Audio(`/voice/${clipId}_${lang}.ogg`);
+      const audio = new Audio(`${import.meta.env.BASE_URL}voice/${clipId}_${lang}.ogg`);
       audio.volume = settings.voice;
       audio.play().catch(() => speakTts(text, lang));
       return;

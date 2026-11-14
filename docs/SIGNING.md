@@ -28,7 +28,7 @@ godot --headless --export-debug "Android" build/dino-kazi-debug.apk
 
 ## Debug APK (GitHub Actions)
 
-`.github/workflows/android-debug.yml` uses `barichello/godot-ci:4.7.2`, installs Android platform 36, and uploads `dino-kazi-debug-apk`. The debug keystore baked into that image is `/root/debug.keystore` (`androiddebugkey` / `android`). Do not ship that keystore to Play.
+`.github/workflows/android-debug.yml` uses `barichello/godot-ci:4.7.2`, installs Android platform 36, and uploads `dino-kazi-debug-apk`. It runs on every push to `main`, on pull requests into `main`, and from the Actions tab (`workflow_dispatch`). The debug keystore baked into that image is `/root/debug.keystore` (`androiddebugkey` / `android`). Do not ship that keystore to Play. No repository secrets are required for this debug job.
 
 ## Release keystore
 

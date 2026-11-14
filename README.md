@@ -51,7 +51,7 @@ cd godot
 godot --headless --export-debug "Android" build/dino-kazi-debug.apk
 ```
 
-GitHub Actions (`.github/workflows/android-debug.yml`) `barichello/godot-ci:4.7.2` imajıyla aynı dışa aktarmayı yapar ve APK'yı artifact olarak yükler. İmajın hata ayıklama anahtarı yalnızca CI içindir. Yayın anahtarı repoya konmaz.
+GitHub Actions (`.github/workflows/android-debug.yml`) `barichello/godot-ci:4.7.2` imajıyla aynı dışa aktarmayı yapar ve `dino-kazi-debug-apk` artifact'ını yükler. Akış `main`'e her itmede, `main`'e açılan pull request'lerde ve Actions sekmesinden elle (`workflow_dispatch`) çalışır. Hata ayıklama anahtarı imajın içindedir; bu iş için depo secret'ı gerekmez. Yayın anahtarı repoya konmaz.
 
 Godot 4.7 şablonu derlemeyi Android 36 ile yapar. Uygulamanın hedeflediği seviye yine 35'tir. CI bu yüzden `platforms;android-36` ve `build-tools;36.1.0` kurar.
 
@@ -64,7 +64,11 @@ npm test
 npm run dev
 ```
 
-Adres: `http://127.0.0.1:47321`. Üretim derlemesi `npm run build` (`web/dist`).
+Adres: `http://127.0.0.1:47321`. Üretim derlemesi `npm run build` (`web/dist`). Yerelde taban yol `/` dir. GitHub Pages derlemesi `BASE_PATH=/dino/` kullanır.
+
+`main`'e her itmede ve elle çalıştırmada `.github/workflows/pages.yml` testi ve derlemeyi yapar, ardından `web/dist` klasörünü GitHub Pages'e yollar. Pull request'lerde yalnızca test ve derleme çalışır. Site adresi: <https://suarez1907.github.io/dino/>.
+
+Pages'in yayınlaması için depo ayarı bir kez yapılır: **Settings → Pages → Build and deployment → Source: GitHub Actions**. Actions kapalıysa **Settings → Actions → General** altından açılır. İlk başarılı dağıtım `github-pages` ortamını oluşturur. Bu ayar yapılmadan dağıtım işi hata verir; derleme işi yine de geçer.
 
 Kamera, aletler, toprak kartı, müze sürükle-bırak ve uyanış aynı kurallarla çalışır. `?shot=dig` gibi adresler ekran görüntüsü içindir. Konuşma `speechSynthesis` kullanır; kayıtlı ses için `web/src/audio.js`.
 
@@ -140,7 +144,7 @@ cd godot
 godot --headless --export-debug "Android" build/dino-kazi-debug.apk
 ```
 
-GitHub Actions (`.github/workflows/android-debug.yml`) runs the same export in `barichello/godot-ci:4.7.2` and uploads the APK. The image debug keystore is for CI only. The release keystore stays out of the repo.
+GitHub Actions (`.github/workflows/android-debug.yml`) runs the same export in `barichello/godot-ci:4.7.2` and uploads the `dino-kazi-debug-apk` artifact. It runs on every push to `main`, on pull requests into `main`, and from the Actions tab (`workflow_dispatch`). The debug key lives in the CI image, so this job needs no repository secrets. The release keystore stays out of the repo.
 
 Godot 4.7's template compiles against Android 36. The app's target SDK stays 35. CI installs `platforms;android-36` and `build-tools;36.1.0` for that compiler.
 
@@ -153,7 +157,11 @@ npm test
 npm run dev
 ```
 
-Open `http://127.0.0.1:47321`. `npm run build` writes `web/dist`.
+Open `http://127.0.0.1:47321`. `npm run build` writes `web/dist` with base path `/`. The Pages build sets `BASE_PATH=/dino/`.
+
+On every push to `main`, and when started by hand, `.github/workflows/pages.yml` runs the tests and the build, then deploys `web/dist` to GitHub Pages. Pull requests only test and build. The site is <https://suarez1907.github.io/dino/>.
+
+Pages will not publish until the repository setting is switched once: **Settings → Pages → Build and deployment → Source: GitHub Actions**. If Actions are disabled, turn them on under **Settings → Actions → General**. The first successful deploy creates the `github-pages` environment. Until that setting is saved, the deploy job fails and the build job still passes.
 
 Camera, tools, the soil card, museum drag-and-snap, and the wake-up use the same rules. URLs such as `?shot=dig` frame a screenshot. Speech uses `speechSynthesis`. See `web/src/audio.js` for recorded clips.
 
