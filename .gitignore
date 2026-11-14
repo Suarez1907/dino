@@ -1,0 +1,10 @@
+.DS_Store
+godot/.godot/
+godot/android/
+godot/build/
+*.keystore
+*.jks
+web/node_modules/
+web/dist/
+web/docs/
+*.log

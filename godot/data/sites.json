@@ -1,0 +1,92 @@
+[
+  {
+    "id": "desert_camp",
+    "biome": "desert",
+    "dino": "triceratops",
+    "tutorial": true,
+    "name": {"tr": "Güneşli Kum Kampı", "en": "Sunny Sand Camp"},
+    "blurb": {"tr": "İlk kazın burada. Pati sana aletleri gösterecek.", "en": "Your first dig is here. Pati will show you the tools."},
+    "spawn": [0, 2.2],
+    "tent": [-6.2, 0.4],
+    "spots": [
+      {"bone": "skull", "pos": [2.3, 5.4], "clue": "bone_tip", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.35}, {"soil": "fragile", "tool": "brush", "seconds": 1.5}]},
+      {"bone": "frill", "pos": [-4.6, 6.2], "clue": "soil_tint", "layers": [{"soil": "compact", "tool": "trowel", "seconds": 1.45}, {"soil": "fragile", "tool": "brush", "seconds": 1.4}]},
+      {"bone": "torso", "pos": [7.2, 1.6], "clue": "bump", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.3}, {"soil": "clay", "tool": "spray", "seconds": 1.2}, {"soil": "fragile", "tool": "brush", "seconds": 1.45}]},
+      {"bone": "tail", "pos": [-2.2, 9.4], "clue": "cracks", "layers": [{"soil": "rock", "tool": "pickaxe", "seconds": 1.55}, {"soil": "fragile", "tool": "brush", "seconds": 1.4}]},
+      {"bone": "leg_l", "pos": [6.4, 8.6], "clue": "footprint", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.35}]},
+      {"bone": "leg_r", "pos": [-7.4, 4.2], "clue": "sparkle", "layers": [{"soil": "clay", "tool": "spray", "seconds": 1.25}, {"soil": "compact", "tool": "trowel", "seconds": 1.35}, {"soil": "fragile", "tool": "brush", "seconds": 1.4}]}
+    ]
+  },
+  {
+    "id": "red_canyon",
+    "biome": "desert",
+    "dino": "velociraptor",
+    "tutorial": false,
+    "name": {"tr": "Kızıl Kanyon", "en": "Red Canyon"},
+    "blurb": {"tr": "Dar gölgelerde küçük, tüylü bir avcı saklı.", "en": "A small feathered hunter is hidden in the narrow shadows."},
+    "spawn": [0, 1.4],
+    "tent": [-5.4, -2.2],
+    "spots": [
+      {"bone": "skull", "pos": [3.4, 4.8], "clue": "sparkle", "layers": [{"soil": "compact", "tool": "trowel", "seconds": 1.4}, {"soil": "fragile", "tool": "brush", "seconds": 1.45}]},
+      {"bone": "arm", "pos": [-3.8, 7.1], "clue": "bone_tip", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.2}, {"soil": "fragile", "tool": "brush", "seconds": 1.35}]},
+      {"bone": "torso", "pos": [7.6, -1.2], "clue": "birds", "layers": [{"soil": "clay", "tool": "spray", "seconds": 1.2}, {"soil": "matrix", "tool": "chisel", "seconds": 1.6}, {"soil": "fragile", "tool": "brush", "seconds": 1.4}]},
+      {"bone": "tail", "pos": [-6.8, 2.4], "clue": "cracks", "layers": [{"soil": "rock", "tool": "pickaxe", "seconds": 1.5}, {"soil": "fragile", "tool": "brush", "seconds": 1.35}]},
+      {"bone": "leg_l", "pos": [2.2, 9.2], "clue": "footprint", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.3}, {"soil": "compact", "tool": "trowel", "seconds": 1.3}]},
+      {"bone": "leg_r", "pos": [8.2, 6.4], "clue": "bump", "layers": [{"soil": "rock", "tool": "pickaxe", "seconds": 1.45}, {"soil": "matrix", "tool": "chisel", "seconds": 1.5}]}
+    ]
+  },
+  {
+    "id": "fern_forest",
+    "biome": "forest",
+    "dino": "stegosaurus",
+    "tutorial": false,
+    "name": {"tr": "Eğrelti Ormanı", "en": "Fern Forest"},
+    "blurb": {"tr": "Yosunların altında plakalı bir dev uyuyor.", "en": "A plated giant is sleeping under the moss."},
+    "spawn": [0, 1.8],
+    "tent": [-6.5, -1.2],
+    "spots": [
+      {"bone": "skull", "pos": [-2.8, 6.4], "clue": "soil_tint", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.3}, {"soil": "fragile", "tool": "brush", "seconds": 1.45}]},
+      {"bone": "plates", "pos": [4.2, 7.8], "clue": "sparkle", "layers": [{"soil": "compact", "tool": "trowel", "seconds": 1.4}, {"soil": "fragile", "tool": "brush", "seconds": 1.55}]},
+      {"bone": "torso", "pos": [8.1, 2.2], "clue": "bump", "layers": [{"soil": "clay", "tool": "spray", "seconds": 1.2}, {"soil": "compact", "tool": "trowel", "seconds": 1.4}, {"soil": "fragile", "tool": "brush", "seconds": 1.4}]},
+      {"bone": "tail", "pos": [-7.2, 5.5], "clue": "bone_tip", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.25}, {"soil": "matrix", "tool": "chisel", "seconds": 1.55}]},
+      {"bone": "leg_l", "pos": [1.6, 10.2], "clue": "footprint", "layers": [{"soil": "rock", "tool": "pickaxe", "seconds": 1.5}, {"soil": "fragile", "tool": "brush", "seconds": 1.35}]},
+      {"bone": "leg_r", "pos": [-5.2, 9.6], "clue": "birds", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.2}, {"soil": "clay", "tool": "spray", "seconds": 1.15}, {"soil": "fragile", "tool": "brush", "seconds": 1.4}]}
+    ]
+  },
+  {
+    "id": "giant_clearing",
+    "biome": "forest",
+    "dino": "trex",
+    "tutorial": false,
+    "name": {"tr": "Dev Açıklık", "en": "Giant Clearing"},
+    "blurb": {"tr": "Ağaçlar seyrelmiş. Burada kocaman bir çene izi var.", "en": "The trees thin out here. There is a huge jaw-shaped clue."},
+    "spawn": [0, 2.0],
+    "tent": [-5.8, -2.4],
+    "spots": [
+      {"bone": "skull", "pos": [3.6, 6.8], "clue": "bone_tip", "layers": [{"soil": "compact", "tool": "trowel", "seconds": 1.4}, {"soil": "fragile", "tool": "brush", "seconds": 1.6}]},
+      {"bone": "arm", "pos": [-4.4, 5.2], "clue": "sparkle", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.15}, {"soil": "fragile", "tool": "brush", "seconds": 1.3}]},
+      {"bone": "torso", "pos": [7.8, 0.6], "clue": "cracks", "layers": [{"soil": "rock", "tool": "pickaxe", "seconds": 1.55}, {"soil": "matrix", "tool": "chisel", "seconds": 1.6}, {"soil": "fragile", "tool": "brush", "seconds": 1.45}]},
+      {"bone": "tail", "pos": [-8.0, 3.2], "clue": "bump", "layers": [{"soil": "clay", "tool": "spray", "seconds": 1.2}, {"soil": "compact", "tool": "trowel", "seconds": 1.4}]},
+      {"bone": "leg_l", "pos": [5.2, 10.4], "clue": "footprint", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.3}, {"soil": "rock", "tool": "pickaxe", "seconds": 1.45}]},
+      {"bone": "leg_r", "pos": [-2.4, 10.6], "clue": "birds", "layers": [{"soil": "matrix", "tool": "chisel", "seconds": 1.55}, {"soil": "fragile", "tool": "brush", "seconds": 1.4}]}
+    ]
+  },
+  {
+    "id": "frost_valley",
+    "biome": "ice",
+    "dino": "brachiosaurus",
+    "tutorial": false,
+    "name": {"tr": "Buzlu Vadi", "en": "Frost Valley"},
+    "blurb": {"tr": "Bu uzun boyunlu kemikler eski bir buzulun içinde korunmuş. Yavaş ve nazik çalış.", "en": "These long-neck bones were kept safe inside an old glacier. Work slowly and gently."},
+    "spawn": [0, 1.6],
+    "tent": [-6.0, -1.8],
+    "spots": [
+      {"bone": "skull", "pos": [2.8, 6.6], "clue": "sparkle", "layers": [{"soil": "clay", "tool": "spray", "seconds": 1.3}, {"soil": "fragile", "tool": "brush", "seconds": 1.55}]},
+      {"bone": "neck", "pos": [-3.6, 8.4], "clue": "bone_tip", "layers": [{"soil": "compact", "tool": "trowel", "seconds": 1.45}, {"soil": "matrix", "tool": "chisel", "seconds": 1.6}, {"soil": "fragile", "tool": "brush", "seconds": 1.5}]},
+      {"bone": "torso", "pos": [8.4, 2.8], "clue": "bump", "layers": [{"soil": "rock", "tool": "pickaxe", "seconds": 1.6}, {"soil": "fragile", "tool": "brush", "seconds": 1.45}]},
+      {"bone": "tail", "pos": [-7.6, 3.8], "clue": "cracks", "layers": [{"soil": "loose", "tool": "shovel", "seconds": 1.25}, {"soil": "clay", "tool": "spray", "seconds": 1.2}, {"soil": "fragile", "tool": "brush", "seconds": 1.4}]},
+      {"bone": "leg_l", "pos": [4.8, 11.0], "clue": "footprint", "layers": [{"soil": "rock", "tool": "pickaxe", "seconds": 1.5}, {"soil": "matrix", "tool": "chisel", "seconds": 1.55}]},
+      {"bone": "leg_r", "pos": [-1.8, 11.2], "clue": "soil_tint", "layers": [{"soil": "compact", "tool": "trowel", "seconds": 1.4}, {"soil": "fragile", "tool": "brush", "seconds": 1.45}]}
+    ]
+  }
+]

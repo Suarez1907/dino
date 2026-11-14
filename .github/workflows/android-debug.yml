@@ -1,0 +1,108 @@
+name: Android debug APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  android-debug:
+    name: Export debug APK
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare Godot home and Android SDK
+        # GitHub Actions sets HOME to /github/home. The image keeps templates
+        # and editor settings under /root, and its default shell is dash.
+        shell: sh
+        run: |
+          set -eu
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/lib/android-sdk}"
+          export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
+          mkdir -p "$HOME/.local/share/godot/export_templates" "$HOME/.config"
+          if [ ! -d "$HOME/.config/godot" ] && [ -d /root/.config/godot ]; then
+            cp -a /root/.config/godot "$HOME/.config/godot"
+          fi
+          TEMPLATE="/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          DEST="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          if [ ! -d "$DEST" ] && [ -d "$TEMPLATE" ]; then
+            cp -a "$TEMPLATE" "$DEST"
+          fi
+          if [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          else
+            SDKM="sdkmanager"
+          fi
+          yes | "$SDKM" --licenses >/dev/null || true
+          # Godot 4.7's Gradle template compiles against API 36.
+          # apksigner is chosen from build-tools that match target SDK 35.
+          "$SDKM" "platforms;android-36" "build-tools;35.0.0" "build-tools;36.1.0"
+          # Gradle export requires res://android/build/build.gradle.
+          ZIP="$DEST/android_source.zip"
+          if [ ! -f "$ZIP" ]; then
+            echo "Missing Android source template: $ZIP" >&2
+            ls -la "$DEST" >&2 || true
+            exit 1
+          fi
+          rm -rf godot/android
+          mkdir -p godot/android/build
+          if command -v unzip >/dev/null 2>&1; then
+            unzip -q -o "$ZIP" -d godot/android/build
+          else
+            python3 -c 'import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$ZIP" godot/android/build
+          fi
+          if [ -f godot/android/build/build/build.gradle ]; then
+            mv godot/android/build/build godot/android/build.tmp
+            rm -rf godot/android/build
+            mv godot/android/build.tmp godot/android/build
+          elif [ -f godot/android/build/android/build/build.gradle ]; then
+            mv godot/android/build/android/build godot/android/build.tmp
+            rm -rf godot/android/build
+            mv godot/android/build.tmp godot/android/build
+          fi
+          if [ ! -f godot/android/build/build.gradle ]; then
+            echo "Android source template did not contain build.gradle" >&2
+            find godot/android -name build.gradle -o -type d | head -50 >&2
+            exit 1
+          fi
+          SETTINGS="$HOME/.config/godot/editor_settings-4.7.tres"
+          if [ ! -f "$SETTINGS" ] || ! grep -q 'export/android/java_sdk_path' "$SETTINGS"; then
+            mkdir -p "$HOME/.config/godot"
+            if [ ! -f "$SETTINGS" ]; then
+              printf '%s\n' '[gd_resource type="EditorSettings" format=3]' '' '[resource]' > "$SETTINGS"
+            fi
+            printf 'export/android/java_sdk_path = "%s"\nexport/android/android_sdk_path = "%s"\nexport/android/debug_keystore = "/root/debug.keystore"\nexport/android/debug_keystore_user = "androiddebugkey"\nexport/android/debug_keystore_pass = "android"\n' \
+              "$JAVA_HOME" "$ANDROID_HOME" >> "$SETTINGS"
+          fi
+          printf '%s\n' "${GODOT_VERSION}.stable" > godot/android/.build_version
+
+      - name: Import project
+        working-directory: godot
+        run: godot --headless --import
+
+      - name: Export debug APK
+        working-directory: godot
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /root/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          ANDROID_HOME: /usr/lib/android-sdk
+        run: |
+          mkdir -p build
+          godot --headless --verbose --export-debug "Android" "build/dino-kazi-debug.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dino-kazi-debug-apk
+          path: godot/build/dino-kazi-debug.apk
+          if-no-files-found: error
