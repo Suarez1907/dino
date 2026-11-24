@@ -16,6 +16,7 @@ var _current_site := ""
 
 func _ready() -> void:
 	_apply_theme()
+	_setup_input()
 	GameState.sticker_unlocked.connect(_on_sticker)
 	GameState.site_unlocked.connect(_on_site)
 	GameState.break_requested.connect(show_break)
@@ -26,6 +27,22 @@ func _ready() -> void:
 
 func _apply_theme() -> void:
 	Ui.apply(get_tree().root, bool(GameState.settings.large_text))
+
+func _setup_input() -> void:
+	var actions := {
+		"dig_brush": KEY_B,
+		"dig_heavy": KEY_N,
+		"tool_next": KEY_TAB,
+		"photo_mode": KEY_P,
+		"pause": KEY_ESCAPE,
+	}
+	for action_name in actions:
+		if InputMap.has_action(action_name):
+			continue
+		InputMap.add_action(action_name)
+		var event := InputEventKey.new()
+		event.physical_keycode = actions[action_name]
+		InputMap.action_add_event(action_name, event)
 
 func _set_world(node: Node) -> void:
 	if world:

@@ -8,14 +8,14 @@ on:
   workflow_dispatch:
 
 env:
-  GODOT_VERSION: "4.7.2"
+  GODOT_VERSION: "4.8"
 
 jobs:
   android-debug:
     name: Export debug APK
     runs-on: ubuntu-24.04
     container:
-      image: barichello/godot-ci:4.7.2
+      image: barichello/godot-ci:4.8
     steps:
       - uses: actions/checkout@v4
 
@@ -73,7 +73,7 @@ jobs:
             find godot/android -name build.gradle -o -type d | head -50 >&2
             exit 1
           fi
-          SETTINGS="$HOME/.config/godot/editor_settings-4.7.tres"
+          SETTINGS="$HOME/.config/godot/editor_settings-4.8.tres"
           if [ ! -f "$SETTINGS" ] || ! grep -q 'export/android/java_sdk_path' "$SETTINGS"; then
             mkdir -p "$HOME/.config/godot"
             if [ ! -f "$SETTINGS" ]; then
@@ -83,6 +83,28 @@ jobs:
               "$JAVA_HOME" "$ANDROID_HOME" >> "$SETTINGS"
           fi
           printf '%s\n' "${GODOT_VERSION}.stable" > godot/android/.build_version
+
+      - name: Cache Godot import and Blender
+        uses: actions/cache@v4
+        with:
+          path: |
+            godot/.godot
+            ~/.cache/blender
+          key: godot-blender-${{ hashFiles('godot/project.godot', 'godot/data/**', 'godot/assets/**', 'tools/**', 'shared/data/**') }}
+          restore-keys: |
+            godot-blender-
+
+      - name: Validate data schema
+        run: python3 tools/validate_data.py
+
+      - name: Build Blender assets
+        if: ${{ hashFiles('tools/blender_assets.py') != '' }}
+        run: |
+          if command -v blender >/dev/null 2>&1; then
+            blender --background --python tools/blender_assets.py
+          else
+            echo "Blender not available in image; skipping asset rebuild."
+          fi
 
       - name: Import project
         working-directory: godot

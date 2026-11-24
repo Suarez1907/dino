@@ -4,6 +4,12 @@ signal changed
 signal sticker_unlocked(id: String)
 signal site_unlocked(id: String)
 signal break_requested
+signal site_changed(site_id: String)
+signal tool_upgraded(tool_id: String, new_level: int)
+signal fossil_found(site_id: String, bone_id: String, quality: float)
+signal research_unlocked(research_id: String)
+signal weather_changed(weather_type: String)
+signal time_of_day_changed(hour: float)
 
 const SAVE_PATH := "user://dino_kazi_save.json"
 
@@ -21,6 +27,18 @@ var settings := {
 	"session_minutes": 0,
 	"pin": "",
 }
+var current_site: String = ""
+var excavation_progress: Dictionary = {}
+var tool_levels: Dictionary = {
+	"brush": 1,
+	"pickaxe": 1,
+	"chisel": 1,
+	"camera": 1,
+}
+var research_tree: Dictionary = {}
+var photo_gallery: Array = []
+var weather_state: String = "clear"
+var time_of_day: float = 12.0
 var sites_save := {}
 var stickers: Array = []
 var tutorial_done := false
@@ -33,6 +51,9 @@ var _break_sent := false
 func _ready() -> void:
 	load_game()
 	Locale.lang = str(settings.lang)
+	if current_site == "":
+		current_site = first_unlocked_site()
+		site_changed.emit(current_site)
 
 func _process(delta: float) -> void:
 	if counting and int(settings.session_minutes) > 0 and not _break_sent:
@@ -45,6 +66,13 @@ func _process(delta: float) -> void:
 			break_requested.emit()
 	elif counting:
 		play_seconds += delta
+	
+	var prev_hour := int(time_of_day)
+	time_of_day = fmod(time_of_day + delta * 0.1, 24.0)
+	if int(time_of_day) != prev_hour:
+		time_of_day_changed.emit(time_of_day)
+		mark_dirty()
+	
 	if _dirty:
 		_dirty = false
 		_write()
@@ -68,6 +96,13 @@ func load_game() -> void:
 	tutorial_done = bool(parsed.get("tutorial_done", false))
 	play_seconds = float(parsed.get("play_seconds", 0.0))
 	session_elapsed = float(parsed.get("session_elapsed", 0.0))
+	current_site = str(parsed.get("current_site", ""))
+	excavation_progress = parsed.get("excavation_progress", {}) if typeof(parsed.get("excavation_progress")) == TYPE_DICTIONARY else {}
+	tool_levels = parsed.get("tool_levels", tool_levels) if typeof(parsed.get("tool_levels")) == TYPE_DICTIONARY else tool_levels
+	research_tree = parsed.get("research_tree", {}) if typeof(parsed.get("research_tree")) == TYPE_DICTIONARY else {}
+	photo_gallery = parsed.get("photo_gallery", []) if typeof(parsed.get("photo_gallery")) == TYPE_ARRAY else []
+	weather_state = str(parsed.get("weather_state", "clear"))
+	time_of_day = float(parsed.get("time_of_day", 12.0))
 
 func _write() -> void:
 	var data := {
@@ -77,6 +112,13 @@ func _write() -> void:
 		"tutorial_done": tutorial_done,
 		"play_seconds": play_seconds,
 		"session_elapsed": session_elapsed,
+		"current_site": current_site,
+		"excavation_progress": excavation_progress,
+		"tool_levels": tool_levels,
+		"research_tree": research_tree,
+		"photo_gallery": photo_gallery,
+		"weather_state": weather_state,
+		"time_of_day": time_of_day,
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file:
@@ -147,6 +189,15 @@ func note_progress(site_id: String, bone_id: String, layer: int, progress: float
 	bone.layer = layer
 	bone.progress = progress
 	bone.damage = damage
+	
+	if not excavation_progress.has(site_id):
+		excavation_progress[site_id] = {}
+	excavation_progress[site_id][bone_id] = {
+		"layer": layer,
+		"progress": progress,
+		"damage": damage,
+		"timestamp": Time.get_unix_time_from_system()
+	}
 	mark_dirty()
 
 func collect_bone(site_id: String, bone_id: String, damage: float) -> void:
@@ -158,6 +209,7 @@ func collect_bone(site_id: String, bone_id: String, damage: float) -> void:
 	mark_dirty()
 	if not was:
 		refresh_awards(site_id)
+		fossil_found.emit(site_id, bone_id, 1.0 - damage)
 
 func place_bone(site_id: String, bone_id: String) -> void:
 	var bone := bone_state(site_id, bone_id)
@@ -178,6 +230,43 @@ func reveal_site(site_id: String) -> void:
 		if idx >= 0 and idx + 1 < Catalog.sites.size():
 			var nxt: Dictionary = Catalog.sites[idx + 1]
 			site_unlocked.emit(str(nxt.id))
+
+func set_current_site(site_id: String) -> void:
+	if current_site != site_id:
+		current_site = site_id
+		site_changed.emit(site_id)
+		mark_dirty()
+
+func get_tool_level(tool_id: String) -> int:
+	return tool_levels.get(tool_id, 1)
+
+func upgrade_tool(tool_id: String) -> bool:
+	var current = get_tool_level(tool_id)
+	if current >= 4:
+		return false
+	tool_levels[tool_id] = current + 1
+	tool_upgraded.emit(tool_id, current + 1)
+	mark_dirty()
+	return true
+
+func unlock_research(research_id: String) -> void:
+	if not research_tree.has(research_id):
+		research_tree[research_id] = true
+		research_unlocked.emit(research_id)
+		mark_dirty()
+
+func has_research(research_id: String) -> bool:
+	return research_tree.has(research_id)
+
+func add_photo(photo_data: Dictionary) -> void:
+	photo_gallery.append(photo_data)
+	mark_dirty()
+
+func set_weather(weather: String) -> void:
+	if weather_state != weather:
+		weather_state = weather
+		weather_changed.emit(weather)
+		mark_dirty()
 
 func refresh_awards(site_id: String) -> void:
 	var any_bone := false
@@ -241,6 +330,13 @@ func reset_progress() -> void:
 	play_seconds = 0.0
 	session_elapsed = 0.0
 	_break_sent = false
+	current_site = ""
+	excavation_progress = {}
+	tool_levels = {"brush": 1, "pickaxe": 1, "chisel": 1, "camera": 1}
+	research_tree = {}
+	photo_gallery = []
+	weather_state = "clear"
+	time_of_day = 12.0
 	mark_dirty()
 
 func buzz(ms: int = 18) -> void:

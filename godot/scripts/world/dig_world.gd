@@ -41,6 +41,8 @@ var _badge: Control
 var _detector_button: Button
 var _tool_buttons := {}
 var _museum_banner: Button
+var _photo_btn: Button
+var _photo_mode := false
 var _arrow: MeshInstance3D
 var _pati: Node3D
 var _holding_wrong := false
@@ -192,9 +194,9 @@ func _update_near() -> void:
 func _update_hud() -> void:
 	if _soil_panel == null:
 		return
-	_soil_panel.visible = near != null and not near.collected
+	_soil_panel.visible = near != null and not near.collected and not _photo_mode
 	if _museum_banner:
-		_museum_banner.visible = _near_museum
+		_museum_banner.visible = _near_museum and not _photo_mode
 	if near != null and not near.collected:
 		var soil := Catalog.soil(near.soil_id())
 		_soil_title.text = Locale.pick(soil.get("name", near.soil_id()))
@@ -679,6 +681,15 @@ func _build_hud() -> void:
 	_detector_button.offset_bottom = -180
 	_detector_button.pressed.connect(_detect)
 	root.add_child(_detector_button)
+	_photo_btn = Ui.button("📷", "sun")
+	_photo_btn.custom_minimum_size = Vector2(120, 56)
+	_photo_btn.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_photo_btn.offset_left = 28
+	_photo_btn.offset_top = -300
+	_photo_btn.offset_right = 172
+	_photo_btn.offset_bottom = -236
+	_photo_btn.pressed.connect(_toggle_photo)
+	root.add_child(_photo_btn)
 	_soil_panel = PanelContainer.new()
 	_soil_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	_soil_panel.offset_left = -520
@@ -766,6 +777,15 @@ func _hint() -> void:
 	var soil := Catalog.soil(near.soil_id())
 	_say(Locale.pick(soil.get("hint", "")))
 	Voice.speak(Locale.pick(soil.get("hint", "")))
+
+func _toggle_photo() -> void:
+	_photo_mode = not _photo_mode
+	if _site_label:
+		_site_label.visible = not _photo_mode
+	if _photo_btn:
+		_photo_btn.text = "📷 ✓" if _photo_mode else "📷"
+	if _museum_banner:
+		_museum_banner.visible = false
 
 func refresh_locale() -> void:
 	if _tool_buttons.is_empty():

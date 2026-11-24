@@ -10,6 +10,20 @@ var mode := "living"
 var _player: AnimationPlayer
 var _using_clips := false
 
+const STATE_ASSEMBLE := "ASSEMBLE_IDLE"
+const STATE_SKINNING := "SKINNING"
+const STATE_IDLE := "IDLE_LIVING"
+const STATE_WALK := "WALK"
+const STATE_ROAR := "ROAR"
+const STATE_REST := "REST"
+
+var completion := 0.0
+var state := STATE_ASSEMBLE
+var _tree: AnimationTree
+var _skin: MeshInstance3D
+var _skin_mat: ShaderMaterial
+var _state_time := 0.0
+
 func _ready() -> void:
 	base_y = position.y
 	_player = _find_player(self)
@@ -21,6 +35,8 @@ func _ready() -> void:
 		if _using_clips:
 			_player.play("idle")
 	_apply_lod()
+	_setup_tree()
+	_build_skin()
 
 func _find_player(node: Node) -> AnimationPlayer:
 	if node is AnimationPlayer:
@@ -45,6 +61,9 @@ func capture_base() -> void:
 
 func _process(delta: float) -> void:
 	time += delta
+	_state_time += delta
+	if state == STATE_ROAR and _state_time > 1.6:
+		set_state(STATE_IDLE)
 	if _using_clips:
 		var want := anim if anim in ["idle", "walk", "eat", "roar"] else "idle"
 		if _player.current_animation != want and _player.has_animation(want):
@@ -134,3 +153,102 @@ func _apply(node: Node3D, state: String, damage: float) -> void:
 	for child in node.get_children():
 		if child is Node3D:
 			_apply(child, state, damage)
+
+func set_completion(ratio: float) -> void:
+	completion = clampf(ratio, 0.0, 1.0)
+	if _skin_mat:
+		_skin_mat.set_shader_parameter("morph", completion)
+	if completion >= 1.0:
+		if state == STATE_ASSEMBLE or state == STATE_SKINNING:
+			set_state(STATE_IDLE)
+	elif completion > 0.0:
+		if state == STATE_ASSEMBLE:
+			set_state(STATE_SKINNING)
+	else:
+		set_state(STATE_ASSEMBLE)
+
+func set_state(next: String) -> void:
+	if state == next:
+		return
+	state = next
+	_state_time = 0.0
+	match state:
+		STATE_ASSEMBLE, STATE_SKINNING:
+			anim = "idle"
+			mode = "ghost"
+		STATE_IDLE:
+			anim = "idle"
+			mode = "living"
+		STATE_WALK:
+			anim = "walk"
+			mode = "living"
+		STATE_ROAR:
+			anim = "roar"
+			mode = "living"
+		STATE_REST:
+			anim = "eat"
+			mode = "living"
+	if _tree and _tree.tree_root:
+		var conds := {
+			"alive": state != STATE_ASSEMBLE,
+			"walking": state == STATE_WALK,
+			"roaring": state == STATE_ROAR,
+			"resting": state == STATE_REST,
+		}
+		for key in conds:
+			var path := "parameters/conditions/" + key
+			if _tree.get(path) != null:
+				_tree.set(path, conds[key])
+
+func roar() -> void:
+	set_state(STATE_ROAR)
+
+func walk() -> void:
+	set_state(STATE_WALK)
+
+func rest() -> void:
+	set_state(STATE_REST)
+
+func _setup_tree() -> void:
+	_tree = find_child("anim_tree", true, false) as AnimationTree
+	if _tree == null:
+		return
+	_tree.active = true
+	if _tree.tree_root:
+		var path := "parameters/conditions/alive"
+		if _tree.get(path) != null:
+			_tree.set(path, false)
+
+func _build_skin() -> void:
+	var body := find_child("body", true, false)
+	if not (body is MeshInstance3D):
+		return
+	var src := body as MeshInstance3D
+	if src.mesh == null:
+		return
+	_skin = MeshInstance3D.new()
+	_skin.name = "skin"
+	_skin.mesh = src.mesh
+	_skin.scale = Vector3.ONE * 1.012
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode blend_mix, cull_back;
+uniform float morph : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 flesh_color : source_color = vec4(0.42, 0.55, 0.36, 1.0);
+uniform vec4 bone_color : source_color = vec4(0.86, 0.80, 0.68, 1.0);
+void fragment() {
+	float n = fract(sin(dot(UV * 91.7, vec2(12.9898, 78.233))) * 43758.5453);
+	float m = smoothstep(n - 0.25, n + 0.25, morph);
+	ALBEDO = mix(bone_color.rgb, flesh_color.rgb, m);
+	ROUGHNESS = mix(0.85, 0.55, m);
+	METALLIC = 0.0;
+	ALPHA = m > 0.02 ? 1.0 : 0.0;
+}
+"""
+	_skin_mat = ShaderMaterial.new()
+	_skin_mat.shader = sh
+	_skin_mat.set_shader_parameter("morph", completion)
+	_skin.material_override = _skin_mat
+	_skin.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	src.add_child(_skin)

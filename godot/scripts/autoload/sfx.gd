@@ -22,7 +22,16 @@ func _ready() -> void:
 		"roar_mid": _roar(150, 0.55),
 		"roar_high": _roar(280, 0.4),
 		"step": _noise(0.05, 0.25),
+		"tool_upgrade": _arpeggio([392, 523, 659, 880], 0.09),
+		"research_unlock": _arpeggio([440, 554, 659, 880, 1108], 0.08),
+		"photo_shutter": _noise(0.06, 0.85),
+		"fossil_snap": _tone(620, 0.1, "square"),
+		"layer_break_0": _noise(0.14, 0.35),
+		"layer_break_1": _noise(0.18, 0.55),
+		"layer_break_2": _noise(0.22, 0.75),
+		"layer_break_3": _noise(0.28, 1.0),
 	}
+	_setup_buses()
 	for i in 6:
 		var player := AudioStreamPlayer.new()
 		add_child(player)
@@ -32,6 +41,19 @@ func _ready() -> void:
 	add_child(music)
 	apply_volumes()
 	music.play()
+
+func _setup_buses() -> void:
+	var wanted: Array[String] = ["Master", "Tools", "Ambient", "UI", "Voice"]
+	for name in wanted:
+		if AudioServer.get_bus_index(name) != -1:
+			continue
+		AudioServer.add_bus()
+		var idx := AudioServer.bus_count - 1
+		AudioServer.set_bus_name(idx, name)
+		AudioServer.set_bus_send(idx, "Master")
+
+func layer_break(index: int) -> void:
+	play("layer_break_%d" % clampi(index, 0, 3), 1.0)
 
 func apply_volumes() -> void:
 	if music:

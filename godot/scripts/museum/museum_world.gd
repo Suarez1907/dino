@@ -6,6 +6,7 @@ signal request_dig
 
 const Ui := preload("res://scripts/ui/ui_kit.gd")
 const DinoBuilder := preload("res://scripts/dino/dino_builder.gd")
+const FossilAssembly := preload("res://scripts/museum/fossil_assembly.gd")
 
 var site_id := ""
 var dino: Node3D
@@ -13,10 +14,59 @@ var cam: Camera3D
 var dragging := ""
 var drag_pos := Vector2.ZERO
 var proxy: MeshInstance3D
+var assembly
+var visitors := []
 var _status: Label
 var _hint_label: Label
+var _progress_label: Label
 var _life_button: Button
 var _cards := {}
+
+class Visitor:
+	extends Node3D
+	var target := Vector3.ZERO
+	var speed := 0.9
+	var obstacles: Array = []
+	var bounds := 5.5
+	var _t := 0.0
+
+	func _ready() -> void:
+		var body := MeshInstance3D.new()
+		var cap := CapsuleMesh.new()
+		cap.radius = 0.22
+		cap.height = 1.1
+		body.mesh = cap
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.32, 0.42, 0.55)
+		mat.roughness = 0.7
+		body.material_override = mat
+		body.position = Vector3(0, 0.55, 0)
+		add_child(body)
+		_pick()
+
+	func _pick() -> void:
+		target = Vector3(randf_range(-bounds, bounds), 0.0, randf_range(-2.6, 3.0))
+
+	func _process(delta: float) -> void:
+		_t += delta
+		var to := target - position
+		to.y = 0.0
+		if to.length() < 0.3 or _t > 9.0:
+			_t = 0.0
+			_pick()
+			return
+		var dir := to.normalized()
+		for o in obstacles:
+			var center: Vector3 = o[0]
+			var radius: float = o[1]
+			var away := position - center
+			away.y = 0.0
+			var d := away.length()
+			if d < radius + 0.7 and d > 0.001:
+				var push := (1.0 - d / (radius + 0.7)) * 2.2
+				dir = (dir + away.normalized() * push).normalized()
+		position += dir * speed * delta
+		rotation.y = atan2(dir.x, dir.z)
 
 func _ready() -> void:
 	add_to_group("locale_refresh")
@@ -28,6 +78,8 @@ func _ready() -> void:
 	dino.scale *= 1.15
 	add_child(dino)
 	_apply_saved()
+	_build_assembly()
+	_build_exhibits()
 	cam = Camera3D.new()
 	cam.position = Vector3(0.2, 2.3, 6.4)
 	cam.fov = 42
@@ -70,34 +122,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			pos = (event as InputEventScreenTouch).position
 		_drop(pos)
 
-func _drop(screen_pos: Vector2) -> void:
+func _drop(_screen_pos: Vector2) -> void:
 	var bone := dragging
 	dragging = ""
 	proxy.visible = false
-	if bone == "" or cam == null:
+	if bone == "" or cam == null or assembly == null:
 		return
-	var best: Node3D = null
-	var best_d := 9999.0
-	var best_bone := ""
-	for key in dino.get("parts"):
-		var node: Node3D = dino.get("parts")[key]
-		if not (node is MeshInstance3D):
-			continue
-		var slot_bone := str(node.get_meta("bone_id", ""))
-		if slot_bone == "":
-			continue
-		var sp := cam.unproject_position(node.global_position)
-		var dist := sp.distance_to(screen_pos)
-		if dist < best_d:
-			best_d = dist
-			best = node
-			best_bone = slot_bone
-	if best == null:
+	var state := GameState.bone_state(site_id, bone)
+	if not bool(state.collected):
+		_status.text = Locale.t("need_bones")
 		return
-	var limit := 170.0 if best_bone == bone else 80.0
-	if best_d <= limit and best_bone == bone:
+	var target := assembly.nearest_socket(proxy.global_position)
+	if target == bone and assembly.try_snap(bone, proxy.global_position):
 		_place(bone)
-	elif best_d < 120.0:
+		return
+	if target != "" or _near_any_socket(proxy.global_position):
 		_status.text = Locale.t("snap_no")
 		Sfx.play("wrong", 1.2)
 		GameState.buzz(12)
@@ -113,6 +152,7 @@ func _place(bone_id: String) -> void:
 	GameState.buzz(16)
 	_status.text = Locale.t("snap_ok")
 	_refresh_cards()
+	_update_progress()
 	if GameState.all_placed(site_id):
 		_status.text = Locale.t("all_placed")
 		Sfx.play("star")
@@ -185,6 +225,14 @@ func _hud() -> void:
 	_status.offset_bottom = 170
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(_status)
+	_progress_label = Ui.label("", 24)
+	_progress_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_progress_label.offset_left = -360
+	_progress_label.offset_top = 172
+	_progress_label.offset_right = 360
+	_progress_label.offset_bottom = 210
+	_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(_progress_label)
 	var tray := HBoxContainer.new()
 	tray.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	tray.offset_top = -150
@@ -259,6 +307,109 @@ func refresh_locale() -> void:
 	if _hint_label:
 		_hint_label.text = Locale.t("drag_help")
 	_refresh_cards()
+	_update_progress()
+
+func _build_assembly() -> void:
+	assembly = FossilAssembly.new()
+	assembly.name = "AssemblyArea"
+	add_child(assembly)
+	assembly.fossil_completed.connect(_on_fossil_completed)
+	var info := Catalog.site(site_id)
+	for spot in info.get("spots", []):
+		var bone_id := str(spot.bone)
+		var node := _find_part(bone_id)
+		if node:
+			assembly.register_socket(bone_id, node.global_transform)
+		var state := GameState.bone_state(site_id, bone_id)
+		if bool(state.placed):
+			assembly.snap_to_socket(bone_id)
+	_update_progress()
+
+func _find_part(bone_id: String) -> Node3D:
+	if dino == null:
+		return null
+	var parts = dino.get("parts")
+	if not (parts is Dictionary):
+		return null
+	for key in parts:
+		var node: Node3D = parts[key]
+		if str(node.get_meta("bone_id", "")) == bone_id:
+			return node
+	return null
+
+func _near_any_socket(world_pos: Vector3) -> bool:
+	if assembly == null:
+		return false
+	for bone_id in assembly.bone_sockets:
+		var xform: Transform3D = assembly.bone_sockets[bone_id]
+		if world_pos.distance_to(xform.origin) < 0.5:
+			return true
+	return false
+
+func _update_progress() -> void:
+	if assembly == null:
+		return
+	var ratio: float = assembly.progress_ratio
+	if _progress_label:
+		var word := Locale.t("progress")
+		if word == "progress":
+			word = "İlerleme"
+		_progress_label.text = "%s: %d%%" % [word, int(round(ratio * 100.0))]
+	if dino and dino.has_method("set_completion"):
+		dino.call("set_completion", ratio)
+
+func _on_fossil_completed(_dino_id: String) -> void:
+	if dino and dino.has_method("set_completion"):
+		dino.call("set_completion", 1.0)
+	if dino and dino.has_method("set_state"):
+		dino.call("set_state", "IDLE_LIVING")
+	if _status:
+		_status.text = Locale.t("all_placed")
+	Sfx.play("star")
+	_spawn_visitors()
+
+func _build_exhibits() -> void:
+	var cases := Node3D.new()
+	cases.name = "DisplayCases"
+	add_child(cases)
+	for i in 3:
+		var case_m := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(1.1, 1.4, 1.1)
+		case_m.mesh = box
+		case_m.position = Vector3(-4.2 + i * 1.6, 0.7, -3.2)
+		case_m.material_override = _mat(Color("bfe3e0"), 0.25)
+		cases.add_child(case_m)
+	var panels := Node3D.new()
+	panels.name = "InfoPanels"
+	add_child(panels)
+	var info := Catalog.dino(str(Catalog.site(site_id).dino))
+	var title := Label3D.new()
+	title.text = Locale.pick(info.name)
+	title.font_size = 96
+	title.pixel_size = 0.004
+	title.position = Vector3(0, 3.1, -4.2)
+	title.modulate = Color("2b2118")
+	panels.add_child(title)
+	var sub := Label3D.new()
+	sub.text = Locale.t("drag_help")
+	sub.font_size = 48
+	sub.pixel_size = 0.004
+	sub.position = Vector3(0, 2.6, -4.2)
+	sub.modulate = Color("5a4a3a")
+	panels.add_child(sub)
+
+func _spawn_visitors() -> void:
+	if not visitors.is_empty():
+		return
+	var obstacles := [[Vector3(0, 0, 0), 1.7]]
+	for i in 3:
+		var v := Visitor.new()
+		v.name = "Visitor%d" % i
+		v.position = Vector3(-3.0 + i * 3.0, 0.0, 2.6)
+		v.obstacles = obstacles
+		add_child(v)
+		visitors.append(v)
 
 func _room() -> void:
 	var world_env := WorldEnvironment.new()
