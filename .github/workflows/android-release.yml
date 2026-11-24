@@ -108,7 +108,7 @@ jobs:
           else
             echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=/root/debug.keystore" >> "$GITHUB_ENV"
             echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=androiddebugkey" >> "$GITHUB_ENV"
-            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=***" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android" >> "$GITHUB_ENV"
             echo "KEY_MODE=debug-signed fallback (secrets yok, Play Store icin uygun degil)" >> "$GITHUB_STEP_SUMMARY"
           fi
 
