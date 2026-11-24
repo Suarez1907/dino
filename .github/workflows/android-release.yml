@@ -91,6 +91,27 @@ jobs:
         working-directory: godot
         run: godot --headless --import
 
+      - name: Resolve release keystore
+        env:
+          KS_B64: ${{ secrets.GODOT_ANDROID_KEYSTORE_RELEASE_B64 }}
+          KS_USER: ${{ secrets.GODOT_ANDROID_KEYSTORE_RELEASE_USER }}
+          KS_PASS: ${{ secrets.GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD }}
+        shell: sh
+        run: |
+          set -eu
+          if [ -n "$KS_B64" ]; then
+            printf '%s' "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KS_USER" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "KEY_MODE=release-signed (upload key)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=/root/debug.keystore" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=androiddebugkey" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=***" >> "$GITHUB_ENV"
+            echo "KEY_MODE=debug-signed fallback (secrets yok, Play Store icin uygun degil)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Export release APK
         working-directory: godot
         env:
