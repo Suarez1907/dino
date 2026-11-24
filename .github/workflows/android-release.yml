@@ -101,7 +101,7 @@ jobs:
           ANDROID_HOME: /usr/lib/android-sdk
         run: |
           mkdir -p build
-          godot --headless --verbose --export "Android" "build/dino-kazi-release.apk"
+          godot --headless --verbose --export-release "Android" "build/dino-kazi-release.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
