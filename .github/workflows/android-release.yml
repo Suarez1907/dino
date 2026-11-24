@@ -76,7 +76,7 @@ jobs:
             find godot/android -name build.gradle -o -type d | head -50 >&2
             exit 1
           fi
-          SETTINGS="$HOME/.config/godot/editor_settings-4.8.tres"
+          SETTINGS="$HOME/.config/godot/editor_settings-4.7.tres"
           if [ ! -f "$SETTINGS" ] || ! grep -q 'export/android/java_sdk_path' "$SETTINGS"; then
             mkdir -p "$HOME/.config/godot"
             if [ ! -f "$SETTINGS" ]; then
