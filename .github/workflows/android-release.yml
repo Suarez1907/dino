@@ -85,7 +85,7 @@ jobs:
             printf 'export/android/java_sdk_path = "%s"\nexport/android/android_sdk_path = "%s"\nexport/android/debug_keystore = "/root/debug.keystore"\nexport/android/debug_keystore_user = "androiddebugkey"\nexport/android/debug_keystore_pass = "android"\n' \
               "$JAVA_HOME" "$ANDROID_HOME" >> "$SETTINGS"
           fi
-          printf '%s\n' "${GODOT_VERSION}.stable" > godot/android/.build_version
+          printf '%s\n' "4.7.2.stable" > godot/android/.build_version
 
       - name: Import project
         working-directory: godot
