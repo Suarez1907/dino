@@ -1,5 +1,5 @@
 @tool
-extends EditorScript
+extends SceneTree
 
 ## Scans the levels directory and writes a JSON database of level metadata.
 
@@ -42,3 +42,7 @@ func _write_database(database: Array) -> void:
 	file.store_string(JSON.stringify(database, "\t"))
 	file.close()
 	print("LevelDatabaseBuilder: wrote %d entries to %s" % [database.size(), OUTPUT_PATH])
+
+func _initialize() -> void:
+	_run()
+	quit(0)
